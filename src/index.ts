@@ -2,7 +2,6 @@ import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDB from "./config/database";
 
 // routes
 import authRoutes from "./routes/auth.route";
@@ -35,14 +34,4 @@ app.get('/health', (req: Request, res: Response) => {
 app.use("/api/v1/auth", authRoutes);
 
 
-const startApp = async () => {
-    try {
-        /** Connect to Mongo Database */
-        await connectDB();
-        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-    } catch (error) {
-        throw new Error('Unable to connect to database...')
-    }
-}
-
-startApp();
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
