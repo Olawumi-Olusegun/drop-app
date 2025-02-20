@@ -16,6 +16,23 @@ export const validateSignin = [
 ];
 
 
+export const validatePhoneNumberOTP = [
+  body("phoneNumberOTP").notEmpty().withMessage("Phone number OTP is required"),
+];
+
+export const validateEmailOTP = [
+  body("emailOTP").notEmpty().withMessage("Email OTP is required"),
+];
+
+export const validateEmail = [
+  body("email").isEmail().withMessage("Invalid email format"),
+];
+
+export const validateNewOTP = [
+  body('email').optional().isEmail().withMessage('Invalid email'),
+  body('phoneNumber').optional().isMobilePhone('any').withMessage('Invalid phone number'),
+];
+
 export const validateRequest = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
