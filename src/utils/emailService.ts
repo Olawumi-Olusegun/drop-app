@@ -4,13 +4,17 @@ import { OTPEmailTemplate } from "./OTPEmailTemplate";
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  service: "gmail", // Or use SMTP configuration
+
+let transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || '',
+  port: Number(process.env.EMAIL_PORT) || 0,
+  secure: true, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER, // Your email address
-    pass: process.env.EMAIL_PASS, // Your email password or app password
+  user: process.env.EMAIL_USER, // Your email address
+  pass: process.env.EMAIL_PASS, // generated ethereal password
   },
 });
+
 
 /**
  * Send an OTP email to the user
@@ -19,17 +23,22 @@ const transporter = nodemailer.createTransport({
  */
 
 
-export const sendOTPEmail = async (to: string, otp: string) => {
+export const sendOTPToEmail = async (to: string | null, subject: string, otp: string) => {
+
+  if(!to) {
+    throw new Error("User's email address required") 
+  }
+  
   try {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to,
-      subject: "Your OTP Code",
+      subject,
       html: OTPEmailTemplate(otp),
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.response);
+  
     return info;
   } catch (error) {
     console.error("Error sending email:", error);

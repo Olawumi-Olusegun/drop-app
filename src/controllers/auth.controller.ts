@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import { generateToken } from "../utils/jwt";
-import { USER_ROLES } from "../config/constants";
-import { verifyGoogleToken } from "../utils/verifyGoogleToken";
+import { generateToken, verifyJwtToken } from "../utils/jwt";
 import { AuthRequest, UserRole } from "../types";
 import prisma from "../config/db";
 import { generateOTP } from "../utils/generateOTP";
-import { sendOTPEmail } from "../utils/emailService";
+import { Statuscode } from "../utils/Statuscode";
+import { hashPassword, isPasswordValid } from "../utils/hashPassword";
+import { sendEmail } from "../utils/postMarkEmailService";
 
 /**
  * @desc signupWithPhoneNumber
@@ -14,6 +14,7 @@ import { sendOTPEmail } from "../utils/emailService";
  */
 
 export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => {
+
   const { phoneNumber, role } = req.body;
   const modeOfRegistration = "phoneNumber";
 
@@ -22,7 +23,7 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
     let user = await prisma.user.findUnique({ where: { phoneNumber } });
 
     if (user) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "User already exists" });
     }
 
     // Generate OTP
@@ -52,15 +53,16 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
     });
 
     if (!newUser) {
-      return res.status(400).json({ message: "Unable to create user account" });
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to create user account" });
     }
 
-    // Send OTP (e.g., via SMS)
-    // await sendOTPSMS(phoneNumber, phoneNumberOTP);
+    // Send OTP via email
+    //Implement mobile messaging
+    // await sendOTPToEmail(newUser?.email, "Your OTP Code", phoneNumberOTP);
 
-    return res.status(201).json({ message: "Signed up successfully. OTP sent to your phone." });
+    return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your phone." });
   } catch (error) {
-    return res.status(500).json({ message: "Server error", error });
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
   }
 };
 
@@ -72,6 +74,7 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
  */
 export const signupWithEmail = async (req: AuthRequest, res: Response) => {
   const { email, role } = req.body;
+  
   const modeOfRegistration = "email";
 
   try {
@@ -79,7 +82,7 @@ export const signupWithEmail = async (req: AuthRequest, res: Response) => {
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (user) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "User already exists" });
     }
 
     // Generate OTP
@@ -108,15 +111,15 @@ export const signupWithEmail = async (req: AuthRequest, res: Response) => {
       return createdUser;
     });
 
-    if (!newUser) {
-      return res.status(400).json({ message: "Unable to create user account" });
+    if (!newUser || !newUser.email) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to create user account" });
     }
-    // Send OTP via email
-    // await sendOTPEmail(email, emailOTP);
 
-    return res.status(201).json({ message: "Signed up successfully. OTP sent to your email." });
+    // Send OTP via email
+    await sendEmail(newUser?.email, "Your OTP Code", emailOTP);
+    return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your email." });
   } catch (error) {
-    return res.status(500).json({ message: "Server error", error });
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
   }
 };
 
@@ -148,93 +151,170 @@ export const signupWithGoogle = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.status(201).json({ message: "Signed up successfully", user: newUser });
+    if (!newUser) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to create user account" });
+    }
+
+    return res.status(Statuscode.CREATED).json({ message: "Signed up successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Server error", error });
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
+  }
+};
+
+export const createPassword = async (req: AuthRequest, res: Response) => {
+  
+  const { email, googleId, phoneNumber, password, confirmPassword, } = req.body;
+
+  let user;
+
+  try {
+
+    user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phoneNumber },
+          {
+            AND: [{ email }, { googleId }],
+          },
+        ],
+      },
+    });
+    
+
+    if (!user) {
+      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+    }
+
+    if(user.password) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Password already exist" });
+    }
+
+    if(password !== confirmPassword) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Passwords do not match" });
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Create user password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword }
+    });
+
+    return res.status(Statuscode.CREATED).json({ message: "Password created successfully", });
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
   }
 };
 
 
+export const signIn = async (req: Request, res: Response) => {
 
-// export const signin = async (req: Request, res: Response) => {
-
-//   const { email, password, googleToken, phoneNumber } = req.body;
-
-//     let user;
-   
-//   try {
-
-//     if (googleToken) {
-//       // **Google OAuth Sign-In**
-//       const googleData = await verifyGoogleToken(googleToken);
-
-//       if (!googleData) {
-//         return res.status(400).json({ message: "Invalid Google token" });
-//       }
-
-//       user = await UserModel.findOne({ email: googleData.email, password }).select("-password");
-      
-//       if (!user) {
-//         return res.status(400).json({ message: "Invalid credentials" });
-//       }
-
-//       const isValidPassword = await user.isValidPassword(password);
-
-//       if (!isValidPassword) {
-//         return res.status(401).json({ message: "Invalid credentials" });
-//       }
+  // `identifier` can be either email or phoneNumber
+   const { identifier, password } = req.body;
+ 
+   try {
+     // Find user by email or phoneNumber
+     
+     const user = await prisma.user.findFirst({
+       where: {
+         OR: [{ email: identifier }, { phoneNumber: identifier }],
+       },
+     });
+ 
+     if (!user || !user.password) {
+       return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+     }
+ 
+     const { password: appPassword, ...userWithoutPassword } = user;
+ 
+     // Check if password is correct
+     const isValidPassword = await isPasswordValid(password, appPassword);
   
-//     }
+     if (!isValidPassword) {
+       return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+     }
 
-//     if (phoneNumber) {
-//       // **PhoneNumber Authentication
-//       user = await UserModel.findOne({ phoneNumber, password }).select("-password");
+      const accessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
+      const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
 
-//       if (!user) {
-//         return res.status(400).json({ message: "Invalid credentials" });
-//       }
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
 
-//       const isValidPassword = await user.isValidPassword(password);
+     return res.status(Statuscode.SUCCESS).json({ message: "Sign-in successful",
+      data: { user: {...userWithoutPassword, accessToken, refreshToken, }
+     }});
+  
+   } catch (error) {
+     console.error("Sign-in error:", error);
+     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+   }
+ };
 
-//       if (!isValidPassword) {
-//         return res.status(401).json({ message: "Invalid credentials" });
-//       }
 
-//     }
+ export const refreshToken = async (req: AuthRequest, res: Response) => {
+  
+  const authHeader = req.headers["authorization"];
 
-//     if (email) {
-//       // **Email Authentication
-//       user = await UserModel.findOne({ email, password }).select("-password");
+  let user;
 
-//       if (!user) {
-//         return res.status(400).json({ message: "Invalid credentials" });
-//       }
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
+  }
 
-//       const isValidPassword = await user.isValidPassword(password);
+  const accessToken = authHeader.split(" ")[1];
 
-//       if (!isValidPassword) {
-//         return res.status(401).json({ message: "Invalid credentials" });
-//       }
+  if(!accessToken) {
+    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid access token" }); 
+  }
 
-//     }
+  // Verify accesstoken
+  const verifyToken = verifyJwtToken({ token: accessToken, secret: process.env.JWT_ACCESS_TOKEN_SECRET })
 
-//       if (!user) {
-//         return res.status(401).json({ message: "Invalid credentials" });
-//       }
+  if(!verifyToken) {
+    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid access token" }); 
+  }
 
-//       const accessToken = generateToken({ userId: user.id, role: UserRole.RIDER });
-//       const refreshToken = generateToken({ userId: user.id, role: UserRole.RIDER, expiresIn: "7d" });
+  if (verifyToken.valid && verifyToken.payload?.userId) {
+    user = await prisma.user.findUnique({ where: { id: verifyToken.payload.userId } });
+  }
 
-//       return res.status(200).json({
-//         message: "Login successful",
-//         data: {
-//           ...user,
-//           accessToken,
-//           refreshToken,
-//         }
-//       });
-    
-//   } catch (error) {
-//     return res.status(500).json({ message: "Server error", error });
-//   }
-// };
+  try {
+
+    if (!user) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+    }
+
+    if(!user || !user.refreshToken) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+    }
+
+    const verifyToken = verifyJwtToken({ token: user.refreshToken, secret: process.env.JWT_REFRESH_TOKEN_SECRET })
+
+    if(!verifyToken.valid) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: verifyToken.error })
+    }
+
+    const newAccessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
+    const newRefreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefreshToken },
+    });
+
+   return res.status(Statuscode.SUCCESS).json({
+    message: "Token refreshed successfully",
+    data: {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+   }});
+
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
+  }
+};
