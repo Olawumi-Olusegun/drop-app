@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 
 // routes
 import authRoutes from "./routes/auth.route";
+import swaggerDocs from "./utils/swagger";
 
 // Load the correct environment file based on NODE_ENV
 const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
@@ -34,4 +35,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use("/api/v1/auth", authRoutes);
 
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    swaggerDocs(app, PORT)
+});
