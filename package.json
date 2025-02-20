@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon src/index.ts",
     "build": "tsc",
-    "start": "cross-env NODE_ENV=production node build/index.js",
+    "start": "node build/index.js",
     "migrate": "cross-env NODE_ENV=development prisma migrate dev",
     "migrate-prod": "cross-env NODE_ENV=production prisma migrate deploy",
     "prisma:dev": "prisma generate --schema=schema.dev.prisma && prisma migrate dev --schema=schema.dev.prisma"
