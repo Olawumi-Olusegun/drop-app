@@ -25,7 +25,7 @@ model User {
   modeOfRegistration    ModeOfRegistration
   country               String?
   city                  String?
-  resetToken            String?
+  refreshToken          String?
   profileImage          String?
   isUserVerified        Boolean            @default(false)
   createdAt             DateTime           @default(now())

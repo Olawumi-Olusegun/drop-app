@@ -1,14 +1,21 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../types";
+import { Statuscode } from "../utils/Statuscode";
 
 
 export const authenticateUser = (req: AuthRequest, res: Response, next: NextFunction) => {
   
-  const token = req.header("Authorization")?.split(" ")[1];
+  const authHeader = req.headers["authorization"];
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "Unauthorized: No token provided" });
+    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: No token provided" });
   }
 
   try {
@@ -16,7 +23,17 @@ export const authenticateUser = (req: AuthRequest, res: Response, next: NextFunc
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token has expired" });
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+    }
+    if (error instanceof jwt.NotBeforeError) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token not active yet" });
+    }
+
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
 
