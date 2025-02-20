@@ -11,12 +11,14 @@ const router = express.Router();
 // authentication endpoints
 /**
  * @openapi
- * /signup-with-email:
+ * /api/v1/auth/signup-with-email:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: Signup with email
- *     description: Create a new user account using an email address.
+ *     description: |
+ *         - Create a new user account using an email address.
+ *         - Register with email and role ("rider", "driver", "admin").
  *     requestBody:
  *       required: true
  *       content:
@@ -27,6 +29,7 @@ const router = express.Router();
  *               email:
  *                 type: string
  *                 example: "hustiyitru@gufum.com"
+ *                 description: The email associated with the account.
  *               role:
  *                 type: string
  *                 example: "rider"
@@ -41,12 +44,14 @@ router.post("/signup-with-email", validateSignup, validateRequest, signupWithEma
 
 /**
  * @openapi
- * /signup-with-phone-number:
+ * /api/v1/auth/signup-with-phone-number:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: Signup with phone number
- *     description: Create a new user account using a phone number.
+ *     description: |
+ *         - Create a new user account using a phone number.
+ *         - Register with phoneNumber and role ("rider", "driver", "admin").
  *     requestBody:
  *       required: true
  *       content:
@@ -75,12 +80,14 @@ router.post("/signup-with-google", validateEmail, validateRequest, signupWithGoo
 // signin endpoint
 /**
  * @openapi
- * /signin:
+ * /api/v1/auth/signin:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: User login
- *     description: Sign in with email/phone and password.
+ *     description: |
+ *       - Sign in with an identifier and password.
+ *       - The identifier can be either an email or a phone number used during signup.
  *     requestBody:
  *       required: true
  *       content:
@@ -90,10 +97,23 @@ router.post("/signup-with-google", validateEmail, validateRequest, signupWithGoo
  *             properties:
  *               identifier:
  *                 type: string
- *                 example: "johndoe@gmail.com"
+ *                 description: Email or phone number used during signup
  *               password:
  *                 type: string
- *                 example: "strongPassword123"
+ *                 description: User's password
+ *           examples:
+ *             loginWithEmail:
+ *               summary: Login with email
+ *               description: Use email as the identifier
+ *               value:
+ *                 identifier: "johndoe@gmail.com"
+ *                 password: "strongPassword123!"
+ *             loginWithPhone:
+ *               summary: Login with phone number
+ *               description: Use phone number as the identifier
+ *               value:
+ *                 identifier: "+2347065064345"
+ *                 password: "strongPassword12345!"
  *     responses:
  *       200:
  *         description: User successfully signed in
@@ -102,6 +122,8 @@ router.post("/signup-with-google", validateEmail, validateRequest, signupWithGoo
  */
 router.post("/signin", validateSignin, validateRequest, signIn);
 
+
+
 // OTP endpoint
 router.post("/generate-new-otp", validateNewOTP, validateRequest, generateNewOTP);
 
@@ -109,7 +131,7 @@ router.post("/generate-new-otp", validateNewOTP, validateRequest, generateNewOTP
 // verifiction routes for users who signed up with either email or phoneNumber
 /**
  * @openapi
- * /verify-phone-number:
+ * /api/v1/auth/verify-phone-number:
  *   post:
  *     tags:
  *       - Verification
@@ -125,7 +147,7 @@ router.post("/generate-new-otp", validateNewOTP, validateRequest, generateNewOTP
  *               phoneNumber:
  *                 type: string
  *                 example: "+1234567890"
- *               otp:
+ *               phoneNumberOTP:
  *                 type: string
  *                 example: "1234"
  *     responses:
@@ -140,7 +162,7 @@ router.post("/verify-phone-number", validatePhoneNumberOTP, validateRequest, ver
 
 /**
  * @openapi
- * /verify-email:
+ * /api/v1/auth/verify-email:
  *   post:
  *     tags:
  *       - Verification
@@ -173,7 +195,7 @@ router.post("/verify-email", validateEmailOTP, validateRequest, verifyEmailOTP);
 // Password endpoints
 /**
  * @openapi
- * /create-password:
+ * /api/v1/auth/create-password:
  *   post:
  *     tags:
  *       - Authentication
@@ -217,12 +239,12 @@ router.post("/reset-password", validateResetPassword, validateRequest, resetPass
 // refreshtoken endpoint
 /**
  * @openapi
- * /refresh-token:
+ * /api/v1/auth/refresh-token:
  *   get:
  *     tags:
  *       - Authentication
  *     summary: Refresh authentication token
- *     description: Generates a new access token using a refresh token.
+ *     description: Generates a new access token using your old accessToken.
  *     security:
  *       - bearerAuth: []
  *     responses:
