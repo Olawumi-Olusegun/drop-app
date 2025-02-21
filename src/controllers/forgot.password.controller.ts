@@ -42,7 +42,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
         }
         await sendEmail(user.email, "Password Reset OTP", `Your OTP is ${otp}`);
       }
-      return res.status(Statuscode.SUCCESS).json({ message: "OTP sent successfully" });
+
+      return res.status(Statuscode.SUCCESS).json({ message: "Check your email for OTP" });
     } catch (error) {
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
     }
@@ -51,7 +52,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const resetPassword = async (req: Request, res: Response) => {
 
-    const { otp, password, confirmNewPassword } = req.body;
+    const { otp, password, confirmPassword } = req.body;
   
     try {
 
@@ -60,7 +61,7 @@ export const resetPassword = async (req: Request, res: Response) => {
             include: { user: true }
         });
 
-        if(!password || !confirmNewPassword) {
+        if(!password || !confirmPassword) {
             return res.status(Statuscode.NOT_FOUND).json({ message: "Password do not match" });
         }
 
