@@ -146,6 +146,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       if(formattedPhoneNumber) {
           const message = `Your OTP is ${OTP}. It will expire in 10 minute. Do not share it with anyone.`;
           // Send OTP to phoneNumber via Kudi sms
+<<<<<<< HEAD
           // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
           
           // if(!kudiSmsResponse) {
@@ -153,6 +154,15 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
           // }
 
           return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your phone for new OTP" });
+=======
+          const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
+          
+          if(!kudiSmsResponse) {
+            return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
+          }
+
+          return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your email for new OTP" });
+>>>>>>> e69f2b6 (Update: Added forgot password route with documentation)
       }
   
       return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your email for new OTP" });
