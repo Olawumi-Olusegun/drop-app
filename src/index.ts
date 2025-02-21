@@ -38,7 +38,7 @@ app.get('/health', (req: Request, res: Response) => res.status(200).json({ statu
 app.use("/api/v1/auth", authRoutes);
 
 // Catch-all middleware for 404 routes
-// app.use(notFoundHandler);
+app.use(notFoundHandler);
 
 // Global Error Handler (For other errors)
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
