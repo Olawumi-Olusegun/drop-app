@@ -6,6 +6,8 @@ import { generateOTP } from "../utils/generateOTP";
 import { Statuscode } from "../utils/Statuscode";
 import { hashPassword, isPasswordValid } from "../utils/hashPassword";
 import { sendEmail } from "../utils/postMarkEmailService";
+import { formatPhoneNumber } from "../utils/formatPhoneNumber";
+import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
 
 /**
  * @desc signupWithPhoneNumber
@@ -18,9 +20,16 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
   const { phoneNumber, role } = req.body;
   const modeOfRegistration = "phoneNumber";
 
+  // Format phone number before proceeding with other operations
+  const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
+  if(!formattedPhoneNumber) {
+    return res.status(Statuscode.BAD_REQUEST).json({ message: "Could not process phone number" });
+  }
+
   try {
     // Check if user already exists
-    let user = await prisma.user.findUnique({ where: { phoneNumber } });
+    let user = await prisma.user.findUnique({ where: { phoneNumber: formattedPhoneNumber } });
 
     if (user) {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "User already exists" });
@@ -34,7 +43,7 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
     const newUser = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
-          phoneNumber,
+          phoneNumber: formattedPhoneNumber,
           role,
           modeOfRegistration,
           onlineStatus: "offline",
@@ -56,9 +65,15 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
       return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to create user account" });
     }
 
-    // Send OTP via email
-    //Implement mobile messaging
-    // await sendOTPToEmail(newUser?.email, "Your OTP Code", phoneNumberOTP);
+    // Send OTP to phoneNumber via sms
+
+    const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
+
+    const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
+
+    if(!kudiSmsResponse) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
+    }
 
     return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your phone." });
   } catch (error) {
@@ -210,7 +225,7 @@ export const createPassword = async (req: AuthRequest, res: Response) => {
 };
 
 
-export const signIn = async (req: Request, res: Response) => {
+export const signInWithEmail = async (req: Request, res: Response) => {
 
   // `identifier` can be either email or phoneNumber
    const { identifier, password } = req.body;
@@ -251,6 +266,48 @@ export const signIn = async (req: Request, res: Response) => {
   
    } catch (error) {
      console.error("Sign-in error:", error);
+     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+   }
+ };
+
+
+ 
+export const signInWithPhoneNumber = async (req: Request, res: Response) => {
+
+   const { phoneNumber } = req.body;
+
+    // Format phone number before proceeding with other operations
+    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
+    if(!formattedPhoneNumber) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Could not process phone number" });
+    }
+ 
+   try {
+     // Find user by email or phoneNumber
+     const user = await prisma.user.findFirst({
+       where: { phoneNumber: formattedPhoneNumber },
+     });
+ 
+     if (!user || !user.isUserVerified) {
+       return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified" });
+     }
+
+     // Generate OTP
+      const phoneNumberOTP = generateOTP();
+
+      const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
+
+      // Send OTP to phoneNumber via Kudi sms
+      const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
+
+      if(!kudiSmsResponse) {
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
+      }
+
+      return res.status(Statuscode.SUCCESS).json({ message: "A 4 digit OTP has been sent to your phone" });
+  
+   } catch (error) {
      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
    }
  };

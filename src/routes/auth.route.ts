@@ -1,8 +1,8 @@
 import express from "express";
 
-import { createPassword, refreshToken, signIn, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
+import { createPassword, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
 import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup } from "../validators";
-import { generateNewOTP, verifyEmailOTP, verifyPhoneNumberOTP } from "../controllers/verification.controller";
+import { generateNewOTP, verifyEmailOTP, verifyPhoneNumberOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
 import { authenticateUser } from "../middlewares/auth.middleware";
 
@@ -73,14 +73,12 @@ router.post("/signup-with-email", validateSignup, validateRequest, signupWithEma
  */
 router.post("/signup-with-phone-number", validateSignup, validateRequest, signupWithPhoneNumber);
 
-
-
 router.post("/signup-with-google", validateEmail, validateRequest, signupWithGoogle);
 
 // signin endpoint
 /**
  * @openapi
- * /api/v1/auth/signin:
+ * /api/v1/auth/signin-with-email:
  *   post:
  *     tags:
  *       - Authentication
@@ -120,8 +118,11 @@ router.post("/signup-with-google", validateEmail, validateRequest, signupWithGoo
  *       401:
  *         description: Unauthorized
  */
-router.post("/signin", validateSignin, validateRequest, signIn);
 
+
+router.post("/signin-with-email", validateSignin, validateRequest, signInWithEmail);
+
+router.post("/signin-with-phone-number", signInWithPhoneNumber);
 
 
 // OTP endpoint
@@ -131,7 +132,7 @@ router.post("/generate-new-otp", validateNewOTP, validateRequest, generateNewOTP
 // verifiction routes for users who signed up with either email or phoneNumber
 /**
  * @openapi
- * /api/v1/auth/verify-phone-number:
+ * /api/v1/auth/verify-signup-with-phone-number:
  *   post:
  *     tags:
  *       - Verification
@@ -158,7 +159,7 @@ router.post("/generate-new-otp", validateNewOTP, validateRequest, generateNewOTP
  *       401:
  *         description: Unauthorized request
  */
-router.post("/verify-phone-number", validatePhoneNumberOTP, validateRequest, verifyPhoneNumberOTP);
+router.post("/verify-signup-with-phone-number", validatePhoneNumberOTP, validateRequest, verifyPhoneNumberOTP);
 
 /**
  * @openapi
@@ -190,7 +191,7 @@ router.post("/verify-phone-number", validatePhoneNumberOTP, validateRequest, ver
  *         description: Unauthorized request
  */
 router.post("/verify-email", validateEmailOTP, validateRequest, verifyEmailOTP);
-
+router.post("/verify-signin-with-phone-number", VerifySignInWithPhoneNumber);
 
 // Password endpoints
 /**
@@ -233,7 +234,166 @@ router.post("/verify-email", validateEmailOTP, validateRequest, verifyEmailOTP);
  */
 router.post("/create-password", validateCreatePassword, validateRequest, createPassword);
 
+/**
+ * @swagger
+ * /api/v1/auth/forgot-password:
+ *   post:
+ *     summary: Request a password reset
+ *     description: |
+ *       This endpoint allows a user to request a password reset.
+ *       The user must provide either an `email` or a `phoneNumber`.
+ *       - If `email` is provided, `phoneNumber` should be omitted.
+ *       - If `phoneNumber` is provided, `email` should be omitted.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+2348123456789"
+ *             oneOf:
+ *               - required: [email]
+ *               - required: [phoneNumber]
+ *           examples:
+ *             ExampleWithEmail:
+ *               summary: Forgot password with email
+ *               value:
+ *                 email: "user@example.com"
+ *             ExampleWithPhone:
+ *               summary: Forgot password with phone number
+ *               value:
+ *                 phoneNumber: "+2348123456789"
+ *     responses:
+ *       200:
+ *         description: Password reset request successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset instructions sent successfully"
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       400:
+ *         description: Bad request (invalid input)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Either email or phoneNumber is required"
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
 router.post("/forgot-password", validateForgotPassword, validateRequest, forgotPassword);
+
+
+/**
+ * @swagger
+ * /api/v1/auth/reset-password:
+ *   post:
+ *     summary: Reset user password
+ *     description: Allows users to reset their password using an OTP.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otp
+ *               - password
+ *               - confirmPassword
+ *             properties:
+ *               otp:
+ *                 type: string
+ *                 example: "5423"
+ *                 description: One-time password (OTP) sent to the user.
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: "password@123"
+ *                 description: New password for the user.
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: "password@123"
+ *                 description: Confirm the new password.
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successfully"
+ *       400:
+ *         description: Bad request (invalid or expired OTP, or passwords do not match)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid OTP or password mismatch"
+ *       404:
+ *         description: User not found or OTP not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found or invalid OTP"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
 router.post("/reset-password", validateResetPassword, validateRequest, resetPassword);
 
 // refreshtoken endpoint
