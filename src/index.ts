@@ -37,6 +37,7 @@ app.get('/health', (req: Request, res: Response) => res.status(200).json({ statu
 
 app.use("/api/v1/auth", authRoutes);
 
+swaggerDocs(app, PORT);
 // Catch-all middleware for 404 routes
 app.use(notFoundHandler);
 
@@ -50,7 +51,16 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
   
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    swaggerDocs(app, PORT)
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received. Closing server...");
+  server.close(() => console.log("Server closed."));
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received. Closing server...");
+  server.close(() => console.log("Server closed."));
 });
