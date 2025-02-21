@@ -126,7 +126,88 @@ router.post("/signin-with-phone-number", signInWithPhoneNumber);
 
 
 // OTP endpoint
-router.post("/generate-new-otp", validateNewOTP, validateRequest, generateNewOTP);
+/**
+ * @swagger
+ * /api/v1/auth/resend-new-otp:
+ *   post:
+ *     summary: Request a password reset
+ *     description: |
+ *       This endpoint allows a user to resend and get new OTP.
+ *       The user must provide either an `email` or a `phoneNumber`.
+ *       - If `email` is provided, `phoneNumber` should be omitted.
+ *       - If `phoneNumber` is provided, `email` should be omitted.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+2348123456789"
+ *             oneOf:
+ *               - required: [email]
+ *               - required: [phoneNumber]
+ *           examples:
+ *             ExampleWithEmail:
+ *               summary: Resend OTP with email
+ *               value:
+ *                 email: "user@example.com"
+ *             ExampleWithPhone:
+ *               summary: Resend OTP with phone number
+ *               value:
+ *                 phoneNumber: "+2348123456789"
+ *     responses:
+ *       200:
+ *         description: OTP sent successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Kindly check your phone or email for new OTP"
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       400:
+ *         description: Bad request (invalid input)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Either email or phoneNumber is required"
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
+router.post("/resend-new-otp", validateNewOTP, validateRequest, generateNewOTP);
 
 
 // verifiction routes for users who signed up with either email or phoneNumber
