@@ -67,7 +67,6 @@ export const validateForgotPassword = [
 ];
 
 export const validateResetPassword = [
-  body("email").optional().isEmail().withMessage("Invalid email"),
   body("otp").isString().notEmpty().withMessage("OTP is required"),
   body("phoneNumber").optional().isMobilePhone("any").withMessage("Invalid phone number"),
   body("password").isString().notEmpty().withMessage("Password is required"),
