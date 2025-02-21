@@ -69,19 +69,11 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
 
     const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
 
-<<<<<<< HEAD
     // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
 
     // if(!kudiSmsResponse) {
     //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
     // }
-=======
-    const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
-
-    if(!kudiSmsResponse) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
-    }
->>>>>>> e69f2b6 (Update: Added forgot password route with documentation)
 
     return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your phone." });
   } catch (error) {
@@ -307,19 +299,11 @@ export const signInWithPhoneNumber = async (req: Request, res: Response) => {
       const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
 
       // Send OTP to phoneNumber via Kudi sms
-<<<<<<< HEAD
       // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
 
       // if(!kudiSmsResponse) {
       //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
       // }
-=======
-      const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
-
-      if(!kudiSmsResponse) {
-        return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
-      }
->>>>>>> e69f2b6 (Update: Added forgot password route with documentation)
 
       return res.status(Statuscode.SUCCESS).json({ message: "A 4 digit OTP has been sent to your phone" });
   
