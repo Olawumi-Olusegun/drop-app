@@ -1,15 +1,13 @@
 import {Application, Request, Response} from "express";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import {version} from "./../../package.json";
-
-
+const packageJson = require('./../../package.json');
 const swaggerOptions: swaggerJSDoc.Options = {
     definition: {
         openapi: "3.0.0",
         info: {
             title: "DROP-RIDE REST API Docs",
-            version,
+            version: packageJson.version,
         },
         components: {
             securitySchemas: {
