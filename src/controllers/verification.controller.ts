@@ -12,14 +12,16 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
 
     const { phoneNumber, phoneNumberOTP } = req.body;
 
+    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
     try {
-      if (!phoneNumber || !phoneNumberOTP) {
+      if (!formattedPhoneNumber || !phoneNumberOTP) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "Phone number and OTP are required" });
       }
 
       // Find user by phone number and include OTP relation
       const user = await prisma.user.findUnique({
-        where: { phoneNumber },
+        where: { phoneNumber: formattedPhoneNumber },
         include: { otp: true },
       });
 
@@ -109,26 +111,31 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
 
 
   export const generateNewOTP = async (req: AuthRequest, res: Response) => {
+
     const { phoneNumber, email } = req.body;
-    let user;
-    let formattedPhoneNumber;
-
+    
+    let formattedPhoneNumber = phoneNumber ? formatPhoneNumber(phoneNumber) : null;
+  
     try {
-
-      if (!phoneNumber && !email) {
+  
+      if (!formattedPhoneNumber && !email) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "Phone number or email is required" });
+      }
+  
+      if (phoneNumber && !formattedPhoneNumber) {
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
       }
   
       const OTP = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
   
-      if (phoneNumber) {
-        formattedPhoneNumber = formatPhoneNumber(phoneNumber);
-        if(!formattedPhoneNumber) {
-          return res.status(Statuscode.BAD_REQUEST).json({ message: "Could not process phone number" });
-        }
+      let user = null;
+  
+      // Search user by phoneNumber first, if provided. Otherwise, search by email.
+      if (formattedPhoneNumber) {
         user = await prisma.user.findUnique({ where: { phoneNumber: formattedPhoneNumber } });
-      } else if (email) {
+      } 
+      if (!user && email) {
         user = await prisma.user.findUnique({ where: { email } });
       }
   
@@ -136,28 +143,31 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
         return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
       }
   
-      // Check if user already has an OTP and update it, otherwise create a new one
+      // Upsert OTP
       await prisma.oTP.upsert({
         where: { userId: user.id },
         update: { otp: OTP, expiresAt },
         create: { otp: OTP, expiresAt, user: { connect: { id: user.id } } },
       });
-
-      if(formattedPhoneNumber) {
-          const message = `Your OTP is ${OTP}. It will expire in 10 minute. Do not share it with anyone.`;
-          // Send OTP to phoneNumber via Kudi sms
-          // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
-          
-          // if(!kudiSmsResponse) {
-          //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
-          // }
-
-          return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your phone for new OTP" });
+  
+      // Send OTP via SMS or Email
+      if (formattedPhoneNumber) {
+        const message = `Your OTP is ${OTP}. It will expire in 10 minutes. Do not share it with anyone.`;
+        // Send OTP to phoneNumber via Kudi SMS (Uncomment when implemented)
+        // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
+        
+        // if (!kudiSmsResponse) {
+        //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
+        // }
+  
+        return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your phone for new OTP" });
       }
   
       return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your email for new OTP" });
+  
     } catch (error) {
-      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error }); 
+      console.error("Error generating OTP:", error);
+      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
   };
   
