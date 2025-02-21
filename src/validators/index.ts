@@ -25,6 +25,7 @@ export const validateSignin = [
 
 export const validatePhoneNumberOTP = [
   body("phoneNumberOTP").notEmpty().withMessage("Phone number OTP is required"),
+  body("phoneNumber").notEmpty().withMessage("Phone number is required"),
 ];
 
 export const validateEmailOTP = [

@@ -2,6 +2,8 @@ import {Application, Request, Response} from "express";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 const packageJson = require('./../../package.json');
+
+
 const swaggerOptions: swaggerJSDoc.Options = {
     definition: {
         openapi: "3.0.0",
