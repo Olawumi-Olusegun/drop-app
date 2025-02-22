@@ -205,7 +205,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       }
   
       // Remove password before sending the user data
-      const { password: appPassword, ...userWithoutPassword } = user;
+      const { password: appPassword, otp: appOTP, ...userWithoutPassword } = user;
   
       // Generate access and refresh tokens
       const accessToken = generateToken({
@@ -237,7 +237,60 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
         },
       });
     } catch (error) {
-      console.error("Error verifying sign-in:", error);
+      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+    }
+  };
+  
+
+
+  export const VerifyPhoneNumberUsingOTP = async (req: Request, res: Response) => {
+    const { phoneNumber, phoneNumberOTP, role } = req.body;
+  
+    // Format phone number before proceeding with other operations
+    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+  
+    if (!formattedPhoneNumber) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Could not process phone number" });
+    }
+  
+    try {
+      // Find user and include the OTP model
+      const user = await prisma.user.findFirst({
+        where: { phoneNumber: formattedPhoneNumber, role },
+        include: { otp: true },
+      });
+  
+      if (!user) {
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "User not found" });
+      }
+  
+      // Check if OTP exists
+      if (!user.otp) {
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid OTP" });
+      }
+  
+      // Check if OTP matches
+      if (user.otp.otp !== phoneNumberOTP) {
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid OTP" });
+      }
+  
+      // Check if OTP has expired
+      if (user.otp.expiresAt.getTime() < Date.now()) {
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, please try again" });
+      }
+  
+      // Update user record and delete OTP
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: user.id },
+          data: { isPhoneNumberVerified: true },
+        }),
+        prisma.oTP.delete({ where: { userId: user.id } }),
+      ]);
+  
+      return res.status(Statuscode.SUCCESS).json({ message: "You phone number is now verified" });
+  
+    } catch (error) {
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
   };
