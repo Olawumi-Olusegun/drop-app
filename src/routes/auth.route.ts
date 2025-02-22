@@ -1,8 +1,8 @@
 import express from "express";
 
-import { createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
+import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
 import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup } from "../validators";
-import { generateNewOTP, verifyEmailOTP, verifyPhoneNumberOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
+import { generateNewOTP, verifyEmailOTP, verifyPhoneNumberOTP, VerifyPhoneNumberUsingOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
 import { authenticateUser } from "../middlewares/auth.middleware";
 
@@ -756,7 +756,159 @@ router.get("/refresh-token", authenticateUser, refreshToken);
  *         description: Unauthorized
  */
 
-router.get("/create-username", createUsername);
+router.post("/create-username", createUsername);
+
+
+
+/**
+ * @openapi
+ * /api/v1/auth/add-user-phone-number:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Add phone number to a user account
+ *     description: Allows a user to add a phone number to their account using providing an email, phone number along with a role.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "user@example.com"
+ *                 description: The email of the user is required.
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+2349012345678"
+ *                 description: The phone number of the user is required.
+ *               role:
+ *                 type: string
+ *                 enum: ["user", "admin", "driver"]
+ *                 example: "user"
+ *                 description: The role of the user is required.
+ *     responses:
+ *       200:
+ *         description: A 4-digit OTP has been sent to your phone.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Phone number added successfully"
+ *       400:
+ *         description: Bad request (missing required fields or invalid input).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Email, phoneNumber and user role are required"
+ *       404:
+ *         description: User not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
+router.post("/add-user-phone-number", AddUserPhoneNumber);
+
+
+/**
+ * @openapi
+ * /api/v1/auth/verify-phone-number:
+ *   post:
+ *     tags:
+ *       - Verification
+ *     summary: Verify phone number using OTP
+ *     description: Verifies user's phone number using OTP.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phoneNumber
+ *               - phoneNumberOTP
+ *               - role
+ *             properties:
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+2349012345678"
+ *                 description: User's phone number
+ *               phoneNumberOTP:
+ *                 type: string
+ *                 example: "1234"
+ *                 description: OTP that was sent to the user.
+ *               role:
+ *                 type: string
+ *                 example: "rider"
+ *                 description: The role of the user.
+ *     responses:
+  *       200:
+ *         description: OTP verified successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "You account is no verified"
+ *       400:
+ *         description: Invalid OTP or missing required fields.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid OTP"
+ *       404:
+ *         description: User not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
+router.post("/verify-phone-number", VerifyPhoneNumberUsingOTP);
 
 
 export default router;

@@ -88,6 +88,7 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
  * @access Pulic
  */
 export const signupWithEmail = async (req: AuthRequest, res: Response) => {
+  
   const { email, role } = req.body;
   
   const modeOfRegistration = "email";
@@ -405,3 +406,59 @@ export const createUsername = async (req: AuthRequest, res: Response) => {
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
   }
 }
+
+export const AddUserPhoneNumber = async (req: AuthRequest, res: Response) => {
+  const { email, phoneNumber, role } = req.body;
+
+  // Format phone number before proceeding with other operations
+  const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
+  if (!formattedPhoneNumber) {
+    return res.status(Statuscode.BAD_REQUEST).json({ message: "Could not process phone number" });
+  }
+
+  try {
+    // Find user by email and role
+    const user = await prisma.user.findFirst({
+      where: { email, role },
+    });
+
+    if (!user) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+    }
+
+    // Check if another user already has this phone number
+    const existingPhoneUser = await prisma.user.findFirst({
+      where: { phoneNumber: formattedPhoneNumber },
+    });
+
+    if (existingPhoneUser) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "A user with this phone number already exists" });
+    }
+
+    // Generate OTP
+    const phoneNumberOTP = generateOTP();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+
+      await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: user.id },
+        data: { phoneNumber: formattedPhoneNumber },
+      });
+
+      await tx.oTP.upsert({
+        where: { userId: updatedUser.id },
+        update: { otp: phoneNumberOTP, expiresAt: otpExpiresAt },
+        create: { otp: phoneNumberOTP, expiresAt: otpExpiresAt, user: { connect: { id: user.id } } },
+      });
+
+      return updatedUser;
+    });
+
+    return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
+
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+  }
+};
+
