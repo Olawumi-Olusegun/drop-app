@@ -227,9 +227,6 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
         }),
         prisma.oTP.delete({ where: { userId: user.id } }),
       ]);
-
-      console.log(updatedUser)
-
         
       // Remove password before sending the user data
       const { 
