@@ -2,7 +2,7 @@ import express from "express";
 
 import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
 import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup } from "../validators";
-import { generateNewOTP, verifyEmailOTP, verifyPhoneNumberOTP, VerifyPhoneNumberUsingOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
+import { generateNewOTP, verifyEmailOTP, VerifyPhoneNumberUsingOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
 import { authenticateUser } from "../middlewares/auth.middleware";
 
@@ -425,8 +425,8 @@ router.post("/verify-email", validateEmailOTP, validateRequest, verifyEmailOTP);
  *                       example: "online"
  *                     role:
  *                       type: string
- *                       enum: ["user", "admin", "driver"]
- *                       example: "user"
+ *                       enum: ["rider", "driver", "admin"]
+ *                       example: "rider"
  *                     modeOfRegistration:
  *                       type: string
  *                       enum: ["email", "phoneNumber", "googleId"]
@@ -785,8 +785,8 @@ router.post("/create-username", createUsername);
  *                 description: The phone number of the user is required.
  *               role:
  *                 type: string
- *                 enum: ["user", "admin", "driver"]
- *                 example: "user"
+ *                 enum: ["rider", "driver", "admin"]
+ *                 example: "rider"
  *                 description: The role of the user is required.
  *     responses:
  *       200:
@@ -875,7 +875,7 @@ router.post("/add-user-phone-number", AddUserPhoneNumber);
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "You account is no verified"
+ *                   example: "You phone number is now verified"
  *       400:
  *         description: Invalid OTP or missing required fields.
  *         content:
@@ -909,6 +909,5 @@ router.post("/add-user-phone-number", AddUserPhoneNumber);
  */
 
 router.post("/verify-phone-number", VerifyPhoneNumberUsingOTP);
-
 
 export default router;
