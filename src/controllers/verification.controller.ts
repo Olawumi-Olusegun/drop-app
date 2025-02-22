@@ -205,7 +205,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       }
   
       // Remove password before sending the user data
-      const { password: appPassword, ...userWithoutPassword } = user;
+      const { password: appPassword, otp: appOTP, ...userWithoutPassword } = user;
   
       // Generate access and refresh tokens
       const accessToken = generateToken({
@@ -237,7 +237,6 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
         },
       });
     } catch (error) {
-      console.error("Error verifying sign-in:", error);
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
   };
