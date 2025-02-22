@@ -203,9 +203,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       if (new Date(user.otp.expiresAt) < new Date()) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, please signin again" });
       }
-  
-      // Remove password before sending the user data
-      const { password: appPassword, otp: appOTP, ...userWithoutPassword } = user;
+
   
       // Generate access and refresh tokens
       const accessToken = generateToken({
@@ -222,13 +220,23 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       });
   
       // Update user's refresh token
-      await prisma.$transaction([
+      const updatedUser = await prisma.$transaction([
         prisma.user.update({
           where: { id: user.id },
-          data: { refreshToken },
+          data: { refreshToken, onlineStatus: "online" },
         }),
         prisma.oTP.delete({ where: { userId: user.id } }),
       ]);
+
+      console.log(updatedUser)
+
+        
+      // Remove password before sending the user data
+      const { 
+        password: appPassword,
+        refreshToken: appRefreshToken,
+        ...userWithoutPassword
+      } = updatedUser[0];
   
       return res.status(Statuscode.SUCCESS).json({
         message: "Sign-in successful",
