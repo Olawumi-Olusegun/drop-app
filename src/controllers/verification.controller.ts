@@ -260,8 +260,6 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
         where: { phoneNumber: formattedPhoneNumber, role },
         include: { otp: true },
       });
-
-      console.log(user)
   
       if (!user) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "User not found" });
