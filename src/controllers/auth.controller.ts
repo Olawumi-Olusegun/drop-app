@@ -375,3 +375,33 @@ export const signInWithPhoneNumber = async (req: Request, res: Response) => {
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
   }
 };
+
+
+export const createUsername = async (req: AuthRequest, res: Response) => {
+
+  // `identifier` can be either email or phoneNumber
+  const { identifier, fullName } = req.body;
+ 
+  try {
+    // Find user by email or phoneNumber
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { phoneNumber: identifier }],
+      },
+    });
+
+    if (!user) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+    }
+
+     await prisma.user.update({
+       where: { id: user.id },
+       data: { fullName,  },
+     });
+
+    return res.status(Statuscode.SUCCESS).json({ message: "Username created successful"});
+ 
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+  }
+}

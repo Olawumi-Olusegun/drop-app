@@ -1,6 +1,6 @@
 import express from "express";
 
-import { createPassword, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
+import { createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
 import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup } from "../validators";
 import { generateNewOTP, verifyEmailOTP, verifyPhoneNumberOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
@@ -709,4 +709,54 @@ router.post("/reset-password", validateResetPassword, validateRequest, resetPass
  *         description: Unauthorized
  */
 router.get("/refresh-token", authenticateUser, refreshToken);
+
+
+
+// Create username
+/**
+ * @openapi
+ * /api/v1/auth/create-username:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Create user's fullname
+ *     description: |
+ *       - Create username with an identifier and fullName.
+ *       - The identifier can be either an email or a phone number used during signup.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               identifier:
+ *                 type: string
+ *                 description: Email or phone number used during signup
+ *               fullName:
+ *                 type: string
+ *                 description: User's fullName
+ *           examples:
+ *             CreateUserWithThereEmail:
+ *               summary: Create fullName with email address
+ *               description: Use email as the identifier
+ *               value:
+ *                 identifier: "johndoe@gmail.com"
+ *                 fullName: "John Doe"
+ *             CreateUserWithTherePhoneNumber:
+ *               summary: Create fullName with phone number
+ *               description: Use phone number as the identifier
+ *               value:
+ *                 identifier: "+2347065064345"
+ *                 fullName: "John Doe"
+ *     responses:
+ *       200:
+ *         description: Username created successfully
+ *       401:
+ *         description: Unauthorized
+ */
+
+router.get("/create-username", createUsername);
+
+
 export default router;
