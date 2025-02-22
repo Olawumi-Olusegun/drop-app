@@ -216,7 +216,7 @@ export const createPassword = async (req: AuthRequest, res: Response) => {
     // Create user password
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword }
+      data: { password: hashedPassword, isUserVerified: true }
     });
 
     return res.status(Statuscode.CREATED).json({ message: "Password created successfully", });
@@ -233,7 +233,6 @@ export const signInWithEmail = async (req: Request, res: Response) => {
  
    try {
      // Find user by email or phoneNumber
-     
      const user = await prisma.user.findFirst({
        where: {
          OR: [{ email: identifier }, { phoneNumber: identifier }],

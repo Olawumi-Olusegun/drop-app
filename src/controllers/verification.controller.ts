@@ -291,7 +291,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
         prisma.oTP.delete({ where: { userId: user.id } }),
       ]);
   
-      return res.status(Statuscode.SUCCESS).json({ message: "Your account is now verified" });
+      return res.status(Statuscode.SUCCESS).json({ message: "You phone number is now verified" });
   
     } catch (error) {
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
