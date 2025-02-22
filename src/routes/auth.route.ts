@@ -122,6 +122,71 @@ router.post("/signup-with-google", validateEmail, validateRequest, signupWithGoo
 
 router.post("/signin-with-email", validateSignin, validateRequest, signInWithEmail);
 
+
+/**
+ * @swagger
+ * /api/v1/signin-with-phone-number:
+ *   post:
+ *     summary: Sign in with a phone number
+ *     description: Authenticates a user using their phone number.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phoneNumber
+ *             properties:
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+2348012345678"
+ *                 description: User's phone number in international format.
+ *     responses:
+ *       "200":
+ *         description: Successfully signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "A 4 digit OTP has been sent to your phone"
+ *       "400":
+ *         description: Invalid request (e.g., missing phone number)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Phone number is required"
+ *       "401":
+ *         description: Unauthorized (e.g., invalid credentials)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid phone number"
+ *       "500":
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
 router.post("/signin-with-phone-number", signInWithPhoneNumber);
 
 
@@ -218,7 +283,7 @@ router.post("/resend-new-otp", validateNewOTP, validateRequest, generateNewOTP);
  *     tags:
  *       - Verification
  *     summary: Verify phone number
- *     description: Verifies a user's phone number using OTP.
+ *     description: Verifies a user's phone number using OTP .
  *     requestBody:
  *       required: true
  *       content:
@@ -240,7 +305,7 @@ router.post("/resend-new-otp", validateNewOTP, validateRequest, generateNewOTP);
  *       401:
  *         description: Unauthorized request
  */
-router.post("/verify-signup-with-phone-number", validatePhoneNumberOTP, validateRequest, verifyPhoneNumberOTP);
+router.post("/verify-signup-with-phone-number", validatePhoneNumberOTP, validateRequest, VerifySignInWithPhoneNumber);
 
 /**
  * @openapi
@@ -272,6 +337,155 @@ router.post("/verify-signup-with-phone-number", validatePhoneNumberOTP, validate
  *         description: Unauthorized request
  */
 router.post("/verify-email", validateEmailOTP, validateRequest, verifyEmailOTP);
+
+/**
+ * @openapi
+ * /api/v1/auth/verify-signin-with-phone-number:
+ *   post:
+ *     tags:
+ *       - Verification
+ *     summary: Verify sign-in with phone number
+ *     description: Verifies user login using a phone number and OTP.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phoneNumber
+ *               - otp
+ *               - role
+ *             properties:
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+2349012345678"
+ *                 description: The phone number used for sign-in.
+ *               otp:
+ *                 type: string
+ *                 example: "1234"
+ *                 description: The one-time password (OTP) sent to the user.
+ *               role:
+ *                 type: string
+ *                 example: "rider"
+ *                 description: The role of the user signing in.
+ *     responses:
+  *       200:
+ *         description: Successfully verified the OTP and signed in.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Sign-in successful"
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "550e8400-e29b-41d4-a716-446655440000"
+ *                     fullName:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *                     phoneNumber:
+ *                       type: string
+ *                       example: "+2349012345678"
+ *                     googleId:
+ *                       type: string
+ *                       example: "google-oauth-id-123"
+ *                     isPhoneNumberVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     homeAddress:
+ *                       type: string
+ *                       example: "123 Street, Lagos"
+ *                     longitude:
+ *                       type: number
+ *                       format: float
+ *                       example: 3.3792
+ *                     latitude:
+ *                       type: number
+ *                       format: float
+ *                       example: 6.5244
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: false
+ *                     isNotification:
+ *                       type: boolean
+ *                       example: true
+ *                     onlineStatus:
+ *                       type: string
+ *                       enum: ["online", "offline"]
+ *                       example: "online"
+ *                     role:
+ *                       type: string
+ *                       enum: ["user", "admin", "driver"]
+ *                       example: "user"
+ *                     modeOfRegistration:
+ *                       type: string
+ *                       enum: ["email", "phoneNumber", "googleId"]
+ *                       example: "phoneNumber"
+ *                     country:
+ *                       type: string
+ *                       example: "Nigeria"
+ *                     city:
+ *                       type: string
+ *                       example: "Lagos"
+ *                     accessToken:
+ *                       type: string
+ *                       example: "access-token-here"
+ *                     profileImage:
+ *                       type: string
+ *                       example: "https://example.com/profile.jpg"
+ *                     isUserVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-02-21T10:00:00.000Z"
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-02-21T12:00:00.000Z"
+ *       400:
+ *         description: Invalid OTP or missing required fields.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid OTP"
+ *       404:
+ *         description: User not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+
 router.post("/verify-signin-with-phone-number", VerifySignInWithPhoneNumber);
 
 // Password endpoints
