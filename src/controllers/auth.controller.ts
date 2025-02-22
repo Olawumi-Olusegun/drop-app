@@ -272,46 +272,56 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 
 
  
-export const signInWithPhoneNumber = async (req: Request, res: Response) => {
+ export const signInWithPhoneNumber = async (req: Request, res: Response) => {
+  console.log("Signing in with phone number...");
 
-   const { phoneNumber } = req.body;
+  const { phoneNumber } = req.body;
 
-    // Format phone number before proceeding with other operations
-    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+  // Format phone number
+  const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+  if (!formattedPhoneNumber) {
+    return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
+  }
 
-    if(!formattedPhoneNumber) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Could not process phone number" });
+  try {
+    // Find user by phoneNumber
+    const user = await prisma.user.findFirst({
+      where: { phoneNumber: formattedPhoneNumber },
+    });
+
+    if (!user || !user.isUserVerified) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified" });
     }
- 
-   try {
-     // Find user by email or phoneNumber
-     const user = await prisma.user.findFirst({
-       where: { phoneNumber: formattedPhoneNumber },
-     });
- 
-     if (!user || !user.isUserVerified) {
-       return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified" });
-     }
 
-     // Generate OTP
-      const phoneNumberOTP = generateOTP();
+    // Generate OTP
+    const phoneNumberOTP = generateOTP();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
 
-      const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
 
-      // Send OTP to phoneNumber via Kudi sms
-      // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
+    const createdOTP = await prisma.oTP.upsert({
+      where: { userId: user.id },
+      update: { otp: phoneNumberOTP, expiresAt: otpExpiresAt },
+      create: { otp: phoneNumberOTP, expiresAt: otpExpiresAt, user: { connect: { id: user.id } } },
+    });
 
-      // if(!kudiSmsResponse) {
-      //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
-      // }
+    
+    if (!createdOTP) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to generate OTP. Please try again." });
+    }
 
-      return res.status(Statuscode.SUCCESS).json({ message: "A 4 digit OTP has been sent to your phone" });
-  
-   } catch (error) {
-     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
-   }
- };
+    const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minutes. Do not share it with anyone.`;
 
+    // Send OTP via Kudi SMS
+    // const smsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
+    // if (!smsResponse) {
+    //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to send OTP via SMS" });
+    // }
+
+    return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "An error occurred. Please try again later." });
+  }
+};
 
  export const refreshToken = async (req: AuthRequest, res: Response) => {
   
