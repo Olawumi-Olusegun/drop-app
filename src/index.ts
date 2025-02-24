@@ -5,18 +5,16 @@ import cookieParser from "cookie-parser";
 
 // routes
 import authRoutes from "./routes/auth.route";
+import driverRoutes from "./routes/driver.route";
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
 import passport from "passport";
-import { configKeys } from "./config/configKeys";
+import prisma from "./config/db";
 
 
 // Load the correct environment file based on NODE_ENV
 const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
-
-
-// const envFile = configKeys[process.env.NODE_ENV || "development"];
 
 dotenv.config({ path: envFile });
 
@@ -27,7 +25,6 @@ const app: Application = express();
 app.disable('x-powered-by');
 app.use(express.json());
 
-
 app.use(
     cors({
         origin: ['http://localhost:3000', 'http://localhost:5173','https://drop-app-ytc9.onrender.com',],
@@ -36,7 +33,7 @@ app.use(
     })
 );
 
-// app.use(passport.initialize())
+app.use(passport.initialize())
 
 app.use(cookieParser());
 
@@ -44,6 +41,7 @@ app.use(cookieParser());
 app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'OK' }));
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/drivers", driverRoutes);
 
 swaggerDocs(app, PORT);
 
@@ -64,12 +62,16 @@ const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   console.log("SIGTERM received. Closing server...");
+  await prisma.$disconnect();
+  console.log("Database disconnected");
   server.close(() => console.log("Server closed."));
 });
 
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
   console.log("SIGINT received. Closing server...");
+  await prisma.$disconnect();
+  console.log("Database disconnected");
   server.close(() => console.log("Server closed."));
 });
