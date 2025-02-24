@@ -8,6 +8,7 @@ import { hashPassword, isPasswordValid } from "../utils/hashPassword";
 import { sendEmail } from "../utils/postMarkEmailService";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
+import { Prisma } from "@prisma/client";
 
 
 const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
@@ -43,7 +44,7 @@ export const signupWithPhoneNumber = async (req: Request, res: Response) => {
     const phoneNumberOTP = generateOTP();
 
     // Create user and OTP in a transaction
-    const newUser = await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdUser = await tx.user.create({
         data: {
           phoneNumber: formattedPhoneNumber,
