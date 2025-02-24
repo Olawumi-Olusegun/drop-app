@@ -1,23 +1,27 @@
-# Use Node.js with Alpine for a lightweight image
 FROM node:lts-alpine
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first
-COPY package*.json ./
+# Copy package.json and package-lock.json before installing dependencies
+COPY package.json package-lock.json ./
 
-# Install dependencies
+# Install dependencies (including TypeScript if it's in package.json)
 RUN npm install
 
-# Copy the entire source code
+# Ensure TypeScript is installed globally
+RUN npm install -g typescript
+
+# Copy all files AFTER installing dependencies
 COPY . .
 
-# Build the TypeScript files
+# Verify that TypeScript is installed (optional debugging step)
+RUN npx tsc --version
+
+# Build TypeScript files
 RUN npm run build
 
 # Expose the application port
 EXPOSE 5150
 
-# Run the compiled JavaScript file
-CMD ["node", "build/index.js"]
+# Start the application
+CMD ["npm", "run", "start"]
