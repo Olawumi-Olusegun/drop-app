@@ -8,15 +8,21 @@ import authRoutes from "./routes/auth.route";
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
+import passport from "passport";
+import { configKeys } from "./config/configKeys";
+
 
 // Load the correct environment file based on NODE_ENV
 const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
+
+
+// const envFile = configKeys[process.env.NODE_ENV || "development"];
+
 dotenv.config({ path: envFile });
 
-const PORT = Number(process.env.PORT || 5150);
+const PORT = Number(process.env.PORT || "5150");
 
 const app: Application = express();
-
 
 app.disable('x-powered-by');
 app.use(express.json());
@@ -30,6 +36,8 @@ app.use(
     })
 );
 
+// app.use(passport.initialize())
+
 app.use(cookieParser());
 
 // API Routes
@@ -38,6 +46,7 @@ app.get('/health', (req: Request, res: Response) => res.status(200).json({ statu
 app.use("/api/v1/auth", authRoutes);
 
 swaggerDocs(app, PORT);
+
 // Catch-all middleware for 404 routes
 app.use(notFoundHandler);
 
