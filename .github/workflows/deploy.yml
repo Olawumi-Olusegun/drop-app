@@ -2,7 +2,7 @@ name: CI/CD Pipeline to build and deploy backend to ECS
 
 on:
   push:
-    branches: [cicd-docker-ec2] # Updated branch
+    branches: [olusegun] # Updated branch
 
 jobs:
   build:
