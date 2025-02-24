@@ -5,50 +5,53 @@ import { generateOTP } from "../utils/generateOTP";
 import { Statuscode } from "../utils/Statuscode";
 import { sendEmail } from "../utils/postMarkEmailService";
 
+const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
 export const forgotPassword = async (req: Request, res: Response) => {
-
-    const { email, phoneNumber } = req.body;
-
-    let user;
-
-    try {
-
-      if(phoneNumber) {
-        user = await prisma.user.findUnique({ where: { phoneNumber } });
-      } else if (email) {
-        user = await prisma.user.findUnique({ where: { email } });
-      }
   
-      if (!user) {
-        return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
-      }
   
-      const otp = generateOTP();
-      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  const { email, phoneNumber } = req.body;
 
-      // Store OTP in the database
-      await prisma.oTP.upsert({
-        where: { userId: user.id },
-        update: { otp, expiresAt: otpExpiresAt },
-        create: { userId: user.id, otp, expiresAt: otpExpiresAt },
-      });
-  
-      // Send OTP via email or phoneNumber
-      if(phoneNumber) {
-        //Implement mobile messaging
-      } else if (email) {
-        if(!user.email) {
-           return res.status(Statuscode.NOT_FOUND).json({ message: "No email found for this user" });
-        }
-        await sendEmail(user.email, "Password Reset OTP", `Your OTP is ${otp}`);
-      }
+  try {
 
-      return res.status(Statuscode.SUCCESS).json({ message: "Check your email for OTP" });
-    } catch (error) {
-      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
+    let user = null;
+
+    if (phoneNumber) {
+      user = await prisma.user.findFirst({ where: { phoneNumber } });
+    } else if (email) {
+      user = await prisma.user.findUnique({ where: { email } });
     }
-  };
-  
+
+    if (!user) {
+      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+    }
+
+    // Generate OTP & Expiry
+    const otp = generateOTP();
+
+    // Store OTP in the database
+    await prisma.oTP.upsert({
+      where: { userId: user.id },
+      update: { otp, expiresAt: otpExpiresAt },
+      create: { userId: user.id, otp, expiresAt: otpExpiresAt },
+    });
+
+    // Send OTP via Email or SMS
+    if (phoneNumber) {
+      // const smsResponse = await sendSMSWithKudiSMS(phoneNumber, `Your OTP is ${otp}. It expires in 10 minutes.`);
+      // if (!smsResponse) {
+      //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to send OTP via SMS" });
+      // }
+    } else if (email) {
+      await sendEmail(email, "Password Reset OTP", `Your OTP is ${otp}. It expires in 10 minutes.`);
+    }
+
+    return res.status(Statuscode.SUCCESS).json({ message: "OTP sent successfully. Check your email or phone." });
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "An error occurred. Please try again later." });
+  }
+};
+
 
 export const resetPassword = async (req: Request, res: Response) => {
 
@@ -74,7 +77,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       }
   
       // Check OTP expiration
-      if (userOTP.expiresAt < new Date()) {
+      if (new Date(userOTP.expiresAt) < new Date()) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, request a new one" });
       }
   

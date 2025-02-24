@@ -8,4 +8,17 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const connectDB = async () => {
+  try {
+    await prisma.$connect();
+    console.log("Database connected");
+  } catch (error) {
+    console.error("Prisma connection error:", error);
+    setTimeout(connectDB, 5000); // Retry connection
+  }
+};
+
+connectDB();
+
 export default prisma;
+
