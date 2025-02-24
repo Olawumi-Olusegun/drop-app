@@ -108,7 +108,7 @@ export const signupWithEmail = async (req: Request, res: Response) => {
     const emailOTP = generateOTP();
 
     // Create user and OTP in a transaction
-    const newUser = await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdUser = await tx.user.create({
         data: {
           email,
@@ -455,7 +455,7 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
     // Generate OTP
     const phoneNumberOTP = generateOTP();
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedUser = await tx.user.update({
         where: { id: user.id },
         data: { phoneNumber: formattedPhoneNumber },
