@@ -1,6 +1,6 @@
 deploy:
   needs: build
-  runs-on: [drop-ride-aws-ec2] # Github self-hosted runner
+  runs-on: [drop-ride-aws-ec2] # GitHub self-hosted runner
   steps:
     - name: SSH into Server and Deploy
       uses: appleboy/ssh-action@master
@@ -9,6 +9,23 @@ deploy:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          set +x
+          echo "📄 Creating .env file..."
+          cat <<EOL > .env
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
+          DATABASE_PROVIDER=${{ secrets.DATABASE_PROVIDER }}
+          PORT=${{ secrets.PORT }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_TOKEN_SECRET=${{ secrets.JWT_ACCESS_TOKEN_SECRET }}
+          JWT_REFRESH_TOKEN_SECRET=${{ secrets.JWT_REFRESH_TOKEN_SECRET }}
+          POSTMARK_SERVER_TOKEN=${{ secrets.POSTMARK_SERVER_TOKEN }}
+          DROP_INNOVATION_EMAIL=${{ secrets.DROP_INNOVATION_EMAIL }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          EOL
+          set -x
+
           echo "🚀 Pulling latest Docker image..."
           docker pull ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
 
@@ -21,17 +38,10 @@ deploy:
 
           echo "🚀 Starting new container..."
           docker run -d --name drop-app-backend -p 5150:5150 --env-file .env \
-            -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
-            -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-            -e GOOGLE_CALLBACK_URL="${{ secrets.GOOGLE_CALLBACK_URL }}" \
-            -e DATABASE_PROVIDER="${{ secrets.DATABASE_PROVIDER }}" \
-            -e PORT="${{ secrets.PORT }}" \
-            -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-            -e JWT_ACCESS_TOKEN_SECRET="${{ secrets.JWT_ACCESS_TOKEN_SECRET }}" \
-            -e JWT_REFRESH_TOKEN_SECRET="${{ secrets.JWT_REFRESH_TOKEN_SECRET }}" \
-            -e POSTMARK_SERVER_TOKEN="${{ secrets.POSTMARK_SERVER_TOKEN }}" \
-            -e DROP_INNOVATION_EMAIL="${{ secrets.DROP_INNOVATION_EMAIL }}" \
-            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
+
+          echo "🩺 Checking app health..."
+          sleep 10
+          curl -f http://localhost:5150/health || (echo "❌ Health check failed! Rolling back..." && docker logs drop-app-backend && exit 1)
 
           echo "✅ Deployment completed!"
