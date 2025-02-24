@@ -3,7 +3,7 @@ FROM node:lts-alpine
 WORKDIR /app
 
 # Copy package.json and package-lock.json before installing dependencies
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # Install dependencies (including TypeScript if it's in package.json)
 RUN npm install
