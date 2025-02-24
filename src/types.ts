@@ -1,8 +1,13 @@
 import { Request } from "express";
 
 export interface AuthRequest extends Request {
-    user?: { userId: string; role: string };
-  }
+  user?: {
+    userId: string;
+    role: string;
+    googleId?: string;
+  };
+}
+
 
   export enum UserRole {
     RIDER = "rider",

@@ -8,6 +8,11 @@ import { hashPassword, isPasswordValid } from "../utils/hashPassword";
 import { sendEmail } from "../utils/postMarkEmailService";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
+import { Prisma } from "@prisma/client";
+
+
+const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+
 
 /**
  * @desc signupWithPhoneNumber
@@ -15,7 +20,7 @@ import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
  * @access Pulic
  */
 
-export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => {
+export const signupWithPhoneNumber = async (req: Request, res: Response) => {
 
   const { phoneNumber, role } = req.body;
   const modeOfRegistration = "phoneNumber";
@@ -37,10 +42,9 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
 
     // Generate OTP
     const phoneNumberOTP = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
 
     // Create user and OTP in a transaction
-    const newUser = await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdUser = await tx.user.create({
         data: {
           phoneNumber: formattedPhoneNumber,
@@ -66,7 +70,6 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
     }
 
     // Send OTP to phoneNumber via sms
-
     const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
 
     // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
@@ -87,7 +90,7 @@ export const signupWithPhoneNumber = async (req: AuthRequest, res: Response) => 
  * @route POST /api/v1/auth/signup-with-email
  * @access Pulic
  */
-export const signupWithEmail = async (req: AuthRequest, res: Response) => {
+export const signupWithEmail = async (req: Request, res: Response) => {
   
   const { email, role } = req.body;
   
@@ -103,10 +106,9 @@ export const signupWithEmail = async (req: AuthRequest, res: Response) => {
 
     // Generate OTP
     const emailOTP = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
 
     // Create user and OTP in a transaction
-    const newUser = await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdUser = await tx.user.create({
         data: {
           email,
@@ -144,7 +146,7 @@ export const signupWithEmail = async (req: AuthRequest, res: Response) => {
  * @route POST /api/v1/auth/signup-with-google
  * @access Pulic
  */
-export const signupWithGoogle = async (req: AuthRequest, res: Response) => {
+export const signupWithGoogle = async (req: Request, res: Response) => {
   const { email, role } = req.body;
   const modeOfRegistration = "googleId";
 
@@ -177,7 +179,7 @@ export const signupWithGoogle = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createPassword = async (req: AuthRequest, res: Response) => {
+export const createPassword = async (req: Request, res: Response) => {
   
   const { email, googleId, phoneNumber, password, confirmPassword, } = req.body;
 
@@ -202,8 +204,13 @@ export const createPassword = async (req: AuthRequest, res: Response) => {
       return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
     }
 
+    // Users who signed up with google cannot create password
+    if(user.googleId) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Please sign in with Google" });
+    }
+
     if(user.password) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Password already exist" });
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "You already have a password" });
     }
 
     if(password !== confirmPassword) {
@@ -261,7 +268,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       });
 
      return res.status(Statuscode.SUCCESS).json({ message: "Sign-in successful",
-      data: { user: {...userWithoutPassword, accessToken, refreshToken, }
+      data: { user: {...userWithoutPassword, accessToken }
      }});
   
    } catch (error) {
@@ -273,8 +280,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 
  
  export const signInWithPhoneNumber = async (req: Request, res: Response) => {
-  console.log("Signing in with phone number...");
-
+  
   const { phoneNumber } = req.body;
 
   // Format phone number
@@ -295,7 +301,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 
     // Generate OTP
     const phoneNumberOTP = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+    
 
 
     const createdOTP = await prisma.oTP.upsert({
@@ -323,11 +329,11 @@ export const signInWithEmail = async (req: Request, res: Response) => {
   }
 };
 
- export const refreshToken = async (req: AuthRequest, res: Response) => {
-  
-  const authHeader = req.headers["authorization"];
+ export const refreshToken = async (req: Request, res: Response) => {
 
-  let user;
+  let user = null;
+
+  const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
@@ -387,7 +393,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 };
 
 
-export const createUsername = async (req: AuthRequest, res: Response) => {
+export const createUsername = async (req: Request, res: Response) => {
 
   // `identifier` can be either email or phoneNumber
   const { identifier, fullName } = req.body;
@@ -416,7 +422,8 @@ export const createUsername = async (req: AuthRequest, res: Response) => {
   }
 }
 
-export const AddUserPhoneNumber = async (req: AuthRequest, res: Response) => {
+export const AddUserPhoneNumber = async (req: Request, res: Response) => {
+
   const { email, phoneNumber, role } = req.body;
 
   // Format phone number before proceeding with other operations
@@ -447,9 +454,8 @@ export const AddUserPhoneNumber = async (req: AuthRequest, res: Response) => {
 
     // Generate OTP
     const phoneNumberOTP = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedUser = await tx.user.update({
         where: { id: user.id },
         data: { phoneNumber: formattedPhoneNumber },

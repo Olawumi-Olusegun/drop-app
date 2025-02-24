@@ -7,6 +7,8 @@ import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { generateToken } from "../utils/jwt";
 import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
 
+const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
+
 
 export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
 
@@ -60,10 +62,12 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
   };
   
 
-  export const verifyEmailOTP = async (req: AuthRequest, res: Response) => {
+  export const verifyEmailOTP = async (req: Request, res: Response) => {
+
     const { email, emailOTP } = req.body;
-  
+
     try {
+  
       if (!email || !emailOTP) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "Email and OTP are required" });
       }
@@ -79,7 +83,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       }
   
       // Check if OTP is expired
-      if (user.otp.expiresAt < new Date()) {
+      if (new Date(user.otp.expiresAt) < new Date()) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired" });
       }
   
@@ -110,7 +114,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
   
 
 
-  export const generateNewOTP = async (req: AuthRequest, res: Response) => {
+  export const generateNewOTP = async (req: Request, res: Response) => {
 
     const { phoneNumber, email } = req.body;
     
@@ -127,7 +131,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       }
   
       const OTP = generateOTP();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
+
   
       let user = null;
   
@@ -280,7 +284,7 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       }
   
       // Check if OTP has expired
-      if (user.otp.expiresAt.getTime() < Date.now()) {
+      if (new Date(user.otp.expiresAt) < new Date()) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, please try again" });
       }
   
