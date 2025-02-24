@@ -1,27 +1,23 @@
-FROM node:lts-alpine
+# Use Node.js base image
+FROM node:18
 
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json before installing dependencies
+# Copy package.json and package-lock.json
 COPY package.json ./
 
-# Install dependencies (including TypeScript if it's in package.json)
+# Install dependencies
 RUN npm install
 
-# Ensure TypeScript is installed globally
-RUN npm install -g typescript
+# Generate Prisma Client
+RUN npx prisma generate
 
-# Copy all files AFTER installing dependencies
+# Copy the rest of the app
 COPY . .
 
-# Verify that TypeScript is installed (optional debugging step)
-RUN npx tsc --version
-
-# Build TypeScript files
-RUN npm run build
-
-# Expose the application port
+# Expose application port
 EXPOSE 5150
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Start application
+CMD ["npm", "start"]
