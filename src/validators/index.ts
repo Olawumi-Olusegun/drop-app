@@ -30,6 +30,7 @@ export const validatePhoneNumberOTP = [
 
 export const validateEmailOTP = [
   body("emailOTP").notEmpty().withMessage("Email OTP is required"),
+  body('email').optional().isEmail().withMessage('Invalid email'),
 ];
 
 export const validateRefreshToken = [

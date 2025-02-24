@@ -1,0 +1,37 @@
+deploy:
+  needs: build
+  runs-on: [drop-ride-aws-ec2] # Github self-hosted runner
+  steps:
+    - name: SSH into Server and Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "🚀 Pulling latest Docker image..."
+          docker pull ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
+
+          echo "🛑 Stopping and removing old container..."
+          docker stop drop-app-backend || true
+          docker rm drop-app-backend || true
+
+          echo "🧹 Removing old unused images..."
+          docker image prune -af || true
+
+          echo "🚀 Starting new container..."
+          docker run -d --name drop-app-backend -p 5150:5150 --env-file .env \
+            -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+            -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            -e GOOGLE_CALLBACK_URL="${{ secrets.GOOGLE_CALLBACK_URL }}" \
+            -e DATABASE_PROVIDER="${{ secrets.DATABASE_PROVIDER }}" \
+            -e PORT="${{ secrets.PORT }}" \
+            -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -e JWT_ACCESS_TOKEN_SECRET="${{ secrets.JWT_ACCESS_TOKEN_SECRET }}" \
+            -e JWT_REFRESH_TOKEN_SECRET="${{ secrets.JWT_REFRESH_TOKEN_SECRET }}" \
+            -e POSTMARK_SERVER_TOKEN="${{ secrets.POSTMARK_SERVER_TOKEN }}" \
+            -e DROP_INNOVATION_EMAIL="${{ secrets.DROP_INNOVATION_EMAIL }}" \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
+
+          echo "✅ Deployment completed!"

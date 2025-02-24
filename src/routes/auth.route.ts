@@ -708,6 +708,8 @@ router.post("/reset-password", validateResetPassword, validateRequest, resetPass
  *       401:
  *         description: Unauthorized
  */
+
+
 router.get("/refresh-token", authenticateUser, refreshToken);
 
 
@@ -756,7 +758,8 @@ router.get("/refresh-token", authenticateUser, refreshToken);
  *         description: Unauthorized
  */
 
-router.post("/create-username", createUsername);
+
+router.post("/create-username", authenticateUser,  createUsername);
 
 
 
