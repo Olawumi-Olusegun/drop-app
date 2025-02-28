@@ -1,16 +1,19 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import morgan from "morgan";
 import cookieParser from "cookie-parser";
 
 // routes
 import authRoutes from "./routes/auth.route";
 import driverRoutes from "./routes/driver.route";
+import rideRoutes from "./routes/ride.route";
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
 import passport from "passport";
 import prisma from "./config/db";
+import { rejectBlockedUsers } from "./middlewares/blocked.user.middleware";
 
 
 // Load the correct environment file based on NODE_ENV
@@ -24,7 +27,7 @@ const app: Application = express();
 
 app.disable('x-powered-by');
 app.use(express.json());
-
+app.use(morgan("dev"));
 app.use(
     cors({
         origin: ['http://localhost:3000', 'http://localhost:5173','https://drop-app-ytc9.onrender.com',],
@@ -40,8 +43,13 @@ app.use(cookieParser());
 // API Routes
 app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'OK' }));
 
+
 app.use("/api/v1/auth", authRoutes);
+
+app.use(rejectBlockedUsers)
+
 app.use("/api/v1/drivers", driverRoutes);
+app.use("/api/v1/rides", rideRoutes);
 
 swaggerDocs(app, PORT);
 
@@ -59,7 +67,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   
 
 const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
 
 process.on("SIGTERM", async () => {

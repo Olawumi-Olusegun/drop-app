@@ -83,9 +83,18 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       }
   
       // Check if OTP is expired
-      if (new Date(user.otp.expiresAt) < new Date()) {
+      // if ((new Date(user.otp.expiresAt).getTime() < new Date())) {
+      //   return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired" });
+      // }
+
+      console.log(user.otp.expiresAt)
+      console.log( new Date(user.otp.expiresAt).getTime() < Date.now())
+
+      // Check if OTP exists and is expired
+      if (!user.otp || !user.otp.expiresAt || new Date(user.otp.expiresAt).getTime() < Date.now()) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired" });
       }
+
   
       // Verify OTP
       if (user.otp.otp !== emailOTP) {

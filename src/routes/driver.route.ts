@@ -5,4 +5,5 @@ const router = express.Router();
 
 router.get("/available-drivers/:riderId", getDriversController);
 
+
 export default router;
