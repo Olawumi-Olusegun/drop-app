@@ -3,7 +3,7 @@ name: CICD PIPELINE TO DEPLOY TO AWS ECS
 on:
   push:
     branches:
-      - main
+      - olusegun
 
 jobs:
   build:
