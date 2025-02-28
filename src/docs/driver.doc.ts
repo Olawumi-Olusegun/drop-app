@@ -7,7 +7,7 @@
  *     summary: Get available drivers near a rider
  *     description: Retrieves a list of available drivers within a certain radius of the rider's location.
  *     tags:
- *       - Drivers
+ *       - Driver
  *     parameters:
  *       - in: path
  *         name: riderId
