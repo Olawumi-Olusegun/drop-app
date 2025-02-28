@@ -3,11 +3,13 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import session from 'express-session';
 
 // routes
 import authRoutes from "./routes/auth.route";
 import driverRoutes from "./routes/driver.route";
 import rideRoutes from "./routes/ride.route";
+import passportRoutes from "./routes/passport.route";
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
@@ -27,6 +29,15 @@ const app: Application = express();
 
 app.disable('x-powered-by');
 app.use(express.json());
+app.use(session({ 
+  secret: process.env.EXPRESS_SESSION_SECRET!, 
+  resave: false, 
+  saveUninitialized: true 
+}));
+
+app.use(passport.initialize())
+app.use(passport.session())
+
 app.use(morgan("dev"));
 app.use(
     cors({
@@ -36,22 +47,21 @@ app.use(
     })
 );
 
-app.use(passport.initialize())
+
 
 app.use(cookieParser());
+swaggerDocs(app, PORT);
 
 // API Routes
 app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'OK' }));
-
-
 app.use("/api/v1/auth", authRoutes);
 
 app.use(rejectBlockedUsers)
-
+app.use("/", passportRoutes);
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
 
-swaggerDocs(app, PORT);
+
 
 // Catch-all middleware for 404 routes
 app.use(notFoundHandler);
