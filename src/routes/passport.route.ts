@@ -15,9 +15,7 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
 }, async (accessToken, refreshToken, profile, done) => {
-
     try {
-
         let user: { userId: string; role: string, googleId: string } | undefined;
 
         const userExist = await prisma.user.findUnique({
@@ -38,7 +36,7 @@ passport.use(new GoogleStrategy({
             });
             user = { userId: newUser.id, role: newUser.role, googleId: newUser?.googleId || "" };
         } else {
-            user = { userId: userExist.id, role: userExist.role, googleId: user?.googleId || ""  };
+            user = { userId: userExist.id, role: userExist.role, googleId: userExist.googleId || "" };
         }
         return done(null, user);
     } catch (error) {
@@ -60,38 +58,36 @@ router.get("/login-error", (req, res) => {
     return res.status(Statuscode.FORBIDDEN).json({ message: "Unable to login user" });
 });
 
-
 router.get("/login-success", async (req, res) => {
-    
     const userId = req.query.userId as string;
 
     if(!userId) {
         return res.status(Statuscode.FORBIDDEN).json({ message: "Unauthorized user" });
-      }
+    }
 
     const user = await prisma.user.findFirst({
         where: { id: userId },
-      });
+    });
 
     if(!user) {
-    return res.status(Statuscode.FORBIDDEN).json({ message: "Unable to login user" });
+        return res.status(Statuscode.FORBIDDEN).json({ message: "Unable to login user" });
     }
-    
+
     const accessToken = generateToken({ userId: user?.id!, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.rider });
     const refreshToken = generateToken({ userId: user?.id!, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.rider, expiresIn: "30d" });
 
     await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
+        where: { id: user.id },
+        data: { refreshToken },
     });
 
     const { password: appPassword, ...userWithoutPassword } = user;
 
-   return res.status(Statuscode.SUCCESS).json({
-    message: "Sign-in successful",
-    data: { 
-        user: {...userWithoutPassword, accessToken }
-   }});
+    return res.status(Statuscode.SUCCESS).json({
+        message: "Sign-in successful",
+        data: { 
+            user: {...userWithoutPassword, accessToken }
+        }});
 });
 
 router.get("/api/v1/auth/google", passport.authenticate("google", { scope: ["email", "profile"] }));
@@ -131,4 +127,11 @@ router.get('/api/v1/auth/logout',  async (req, res) => {
         return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Logout failed" });
     }
 });
+
+router.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
+});
+
+
 export default router;
