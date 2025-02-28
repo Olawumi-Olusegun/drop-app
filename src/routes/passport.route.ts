@@ -6,7 +6,6 @@ import prisma from "../config/db";
 import { Statuscode } from '../utils/Statuscode';
 import { generateToken } from '../utils/jwt';
 import { UserRole } from '@prisma/client';
-
 dotenv.config();
 
 const router = express.Router();
@@ -127,7 +126,6 @@ router.get('/api/v1/auth/logout',  async (req, res) => {
                 data: { refreshToken: null }
             });
         }
-
         return res.status(Statuscode.SUCCESS).json({ message: "Logout successful" });
     } catch (error) {
         return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Logout failed" });
