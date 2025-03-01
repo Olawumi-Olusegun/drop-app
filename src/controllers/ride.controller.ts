@@ -3,16 +3,15 @@ import prisma from "../config/db";
 import { Statuscode } from "../utils/Statuscode";
 
 
-
 export const requestRide = async (req: Request, res: Response) => {
 
-    const {  userId, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude } = req.body;
+    const {  rider, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude } = req.body;
 
     try {
   
       // Check if user exists
       const user = await prisma.user.findUnique({
-        where: { id: userId }
+        where: { id: rider }
       });
   
       if (!user) {
@@ -22,7 +21,7 @@ export const requestRide = async (req: Request, res: Response) => {
   // Create a new ride request
     const ride = await prisma.ride.create({
         data: {
-            userId,
+            userId: rider,
             status: "pending",
             pickupLocation,
             pickupLongitude,
@@ -32,7 +31,7 @@ export const requestRide = async (req: Request, res: Response) => {
             dropoffLongitude,
         } });
   
-      return res.status(201).json({
+      return res.status(Statuscode.CREATED).json({
        message: "Ride request created successfully",
        data: {
             rideId: ride.id,
