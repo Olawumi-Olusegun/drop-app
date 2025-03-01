@@ -5,8 +5,8 @@ import prisma from "../config/db";
 import { generateOTP } from "../utils/generateOTP";
 import { Statuscode } from "../utils/Statuscode";
 import { hashPassword, isPasswordValid } from "../utils/hashPassword";
-import { sendEmail } from "../utils/postMarkEmailService";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
+import { sendEmail } from "../utils/postMarkEmailService";
 import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
 import { Prisma } from "@prisma/client";
 
@@ -125,7 +125,6 @@ export const signupWithEmail = async (req: Request, res: Response) => {
           expiresAt: otpExpiresAt,
         },
       });
-
       return createdUser;
     });
 
@@ -134,7 +133,7 @@ export const signupWithEmail = async (req: Request, res: Response) => {
     }
 
     // Send OTP via email
-    // await sendEmail(newUser?.email, "Your OTP Code", emailOTP);
+    await sendEmail(newUser?.email, "Your OTP Code", emailOTP);
     return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your email." });
   } catch (error) {
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
@@ -183,6 +182,18 @@ export const createPassword = async (req: Request, res: Response) => {
   
   const { email, googleId, phoneNumber, password, confirmPassword, } = req.body;
 
+  console.log({email, googleId, phoneNumber, password, confirmPassword})
+ 
+  let formattedPhoneNumber: string | null = null;
+
+  if(phoneNumber) {
+    formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+    if (!formattedPhoneNumber) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
+    }
+  }
+
+
   let user;
 
   try {
@@ -191,7 +202,7 @@ export const createPassword = async (req: Request, res: Response) => {
       where: {
         OR: [
           { email },
-          { phoneNumber },
+          { phoneNumber: formattedPhoneNumber },
           {
             AND: [{ email }, { googleId }],
           },
@@ -234,7 +245,6 @@ export const createPassword = async (req: Request, res: Response) => {
 
 
 export const signInWithEmail = async (req: Request, res: Response) => {
-
   // `identifier` can be either email or phoneNumber
    const { identifier, password } = req.body;
  
@@ -302,8 +312,6 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     // Generate OTP
     const phoneNumberOTP = generateOTP();
     
-
-
     const createdOTP = await prisma.oTP.upsert({
       where: { userId: user.id },
       update: { otp: phoneNumberOTP, expiresAt: otpExpiresAt },
@@ -383,8 +391,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
    return res.status(Statuscode.SUCCESS).json({
     message: "Token refreshed successfully",
     data: {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
+      accessToken: newAccessToken
    }});
 
   } catch (error) {
@@ -434,10 +441,15 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
   }
 
   try {
-    // Find user by email and role
-    const user = await prisma.user.findFirst({
-      where: { email, role },
-    });
+        // Find user by email or phoneNumber
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email }, { role },
+              { phoneNumber: formattedPhoneNumber }, { role },
+            ],
+          },
+        });
 
     if (!user) {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
@@ -451,16 +463,14 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
     if (existingPhoneUser) {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "A user with this phone number already exists" });
     }
-
     // Generate OTP
     const phoneNumberOTP = generateOTP();
 
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedUser = await tx.user.update({
         where: { id: user.id },
         data: { phoneNumber: formattedPhoneNumber },
       });
-
       await tx.oTP.upsert({
         where: { userId: updatedUser.id },
         update: { otp: phoneNumberOTP, expiresAt: otpExpiresAt },
@@ -470,6 +480,7 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
       return updatedUser;
     });
 
+    // ADD EMAIL SENDING OTP
     return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
 
   } catch (error) {

@@ -1,4 +1,4 @@
-import { body, validationResult } from "express-validator";
+import { body, query, validationResult } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 
 
@@ -80,6 +80,43 @@ export const validateResetPassword = [
       return true;
     }),
 ];
+
+export const validateUserLocation = [
+  body('phoneNumber').optional().isMobilePhone('any').withMessage('Invalid phone number'),
+  body("email").optional().isEmail().withMessage("Invalid email format"),
+  body("role")
+    .isString()
+    .isIn(["rider", "driver", "admin"])
+    .withMessage("Role must be either 'rider' or 'driver'"),
+  body("longitude")
+    .isFloat({ min: -180, max: 180 })
+    .withMessage("Longitude must be a valid coordinate"),
+  body("latitude")
+    .isFloat({ min: -90, max: 90 })
+    .withMessage("Latitude must be a valid coordinate"),
+];
+
+
+export const validateQueryParams = [
+  query("latitude")
+    .notEmpty()
+    .withMessage("Latitude is required")
+    .isFloat({ min: -90, max: 90 })
+    .withMessage("Latitude must be a valid coordinate between -90 and 90"),
+
+  query("longitude")
+    .notEmpty()
+    .withMessage("Longitude is required")
+    .isFloat({ min: -180, max: 180 })
+    .withMessage("Longitude must be a valid coordinate between -180 and 180"),
+
+  query("radius")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Radius must be a positive number"),
+];
+
+
 
 export const validateRequest = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);

@@ -1,10 +1,11 @@
 import express from "express";
 
 import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
-import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup } from "../validators";
+import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup, validateUserLocation } from "../validators";
 import { generateNewOTP, verifyEmailOTP, VerifyPhoneNumberUsingOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
 import { authenticateUser } from "../middlewares/auth.middleware";
+import { updateUserLocation } from "../controllers/user.controller";
 
 const router = express.Router();
 
@@ -38,7 +39,7 @@ router.post("/forgot-password", validateForgotPassword, validateRequest, forgotP
 router.post("/reset-password", validateResetPassword, validateRequest, resetPassword);
 
 // refreshtoken endpoint
-router.get("/refresh-token", authenticateUser, refreshToken);
+router.get("/refresh-token", refreshToken);
 
 // Create username
 router.post("/create-username", authenticateUser,  createUsername);
@@ -46,5 +47,6 @@ router.post("/create-username", authenticateUser,  createUsername);
 router.post("/add-user-phone-number", AddUserPhoneNumber);
 
 router.post("/verify-phone-number", VerifyPhoneNumberUsingOTP);
+router.post("/update-user-location", validateUserLocation, validateRequest, updateUserLocation);
 
 export default router;

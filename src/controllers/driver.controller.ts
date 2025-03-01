@@ -27,7 +27,6 @@ export const getDriversController = async (req: Request, res: Response) => {
 };
 
 export const getAllRidesWithinADriverLocation = async (req: Request, res: Response) => {
-
   const { latitude, longitude, radius } = req.query;
 
   if (!latitude || !longitude || !radius) {
@@ -41,7 +40,6 @@ export const getAllRidesWithinADriverLocation = async (req: Request, res: Respon
   const a = { latitude: 37.8136, longitude: 144.9631 }
   const b = { latitude: 33.8650, longitude: 151.2094 }
 
-  console.log(haversine(a, b))
 
   try {
 
@@ -60,6 +58,7 @@ export const getAllRidesWithinADriverLocation = async (req: Request, res: Respon
     return res.json({  data: { nearbyRides } });
 
   } catch (error) {
+    console.log(error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error: "Server error" });
   }
 }
