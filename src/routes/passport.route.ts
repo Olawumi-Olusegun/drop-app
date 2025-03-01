@@ -16,6 +16,7 @@ passport.use(new GoogleStrategy({
     callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
 }, async (accessToken, refreshToken, profile, done) => {
     try {
+
         let user: { userId: string; role: string, googleId: string } | undefined;
 
         const userExist = await prisma.user.findUnique({
@@ -54,11 +55,12 @@ router.get("/google/callback", passport.authenticate("google", {
     }
 );
 
-router.get("/login-error", (req, res) => {
+router.get("/login-failure", (req, res) => {
     return res.status(Statuscode.FORBIDDEN).json({ message: "Unable to login user" });
 });
 
 router.get("/login-success", async (req, res) => {
+
     const userId = req.query.userId as string;
 
     if(!userId) {
