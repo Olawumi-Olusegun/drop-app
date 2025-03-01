@@ -55,9 +55,10 @@ swaggerDocs(app, PORT);
 // API Routes
 app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'OK' }));
 app.use("/api/v1/auth", authRoutes);
+app.use("/", passportRoutes);
+
 
 app.use(rejectBlockedUsers)
-app.use("/", passportRoutes);
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
 
