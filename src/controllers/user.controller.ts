@@ -39,7 +39,7 @@ export const updateUserLocation = async (req: Request, res: Response) => {
         }
   
       if (!updatedUser) {
-        return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to create user account" });
+        return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to update user location" });
       }
   
       return res.status(Statuscode.SUCCESS).json({ message: "Location updated successfully" });

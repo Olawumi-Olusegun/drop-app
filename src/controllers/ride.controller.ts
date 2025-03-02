@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import prisma from "../config/db";
 import { Statuscode } from "../utils/Statuscode";
+import { expirationTime } from "../utils/timeExpiry";
+import { AuthRequest } from "../types";
 
 
 export const requestRide = async (req: Request, res: Response) => {
 
-    const {  rider, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude } = req.body;
+  const userId = (req as AuthRequest).user?.userId!;
+
+    const {  rider, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude, userTimezone } = req.body;
 
     try {
   
@@ -14,8 +18,14 @@ export const requestRide = async (req: Request, res: Response) => {
         where: { id: rider }
       });
   
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      if (!user || userId !== user.id) {
+        res.status(404).json({ message: "User not found" });
+        return 
+      }
+  
+      if (user.role === "driver") {
+        res.status(Statuscode.FORBIDDEN).json({ message: "Your role cannot request a ride" });
+        return 
       }
 
   // Create a new ride request
@@ -29,19 +39,23 @@ export const requestRide = async (req: Request, res: Response) => {
             dropoffLocation,
             dropoffLatitude,
             dropoffLongitude,
+            userTimezone,
+            expiresAt: expirationTime(15) //The ride expires after 15 minutes
         } });
   
-      return res.status(Statuscode.CREATED).json({
+     res.status(Statuscode.CREATED).json({
        message: "Ride request created successfully",
        data: {
             rideId: ride.id,
             status: ride.status,
+            timezone: ride.userTimezone,
        }
       });
-  
+      return 
     } catch (error) {
       console.error("Error requesting ride:", error);
-      return res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Internal server error" });
+      return 
     }
   };
 
@@ -94,8 +108,6 @@ export const getRideBids = async (req: Request, res: Response) => {
   const { rideId } = req.params;
   
     try {
-
-  
       // Fetch all bids for a ride
       const bids = await prisma.rideBid.findMany({
         where: { rideId },
