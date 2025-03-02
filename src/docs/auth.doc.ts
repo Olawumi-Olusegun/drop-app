@@ -878,7 +878,44 @@
 
 
 
-
+/**
+ * @swagger
+ * /api/v1/auth/update-profile:
+ *   patch:
+ *     summary: Update user profile
+ *     description: Allows an authenticated user to update their profile details.
+ *     tags:
+ *       - User
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: "Adetiba Kayode"
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Profile updated successfully"
+ *       400:
+ *         description: Bad request, missing or invalid parameters
+ *       401:
+ *         description: Unauthorized, user is not authenticated
+ *       500:
+ *         description: Internal server error
+ */
 
 
 

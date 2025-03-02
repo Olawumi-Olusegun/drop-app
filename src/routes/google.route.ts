@@ -1,19 +1,18 @@
 import express from 'express';
-import dotenv from "dotenv";
-import prisma from "../config/db";
+import { OAuth2Client } from "google-auth-library";
 import { Statuscode } from '../utils/Statuscode';
 import { generateToken } from '../utils/jwt';
-import { OAuth2Client } from "google-auth-library";
+import dotenv from "dotenv";
+import prisma from "../config/db";
 
 dotenv.config();
-
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID as string || "");
 
 const router = express.Router();
 
 router.post("/google-auth", async (req, res) => {
-    
+
     const { googleToken, role } = req.body;
 
     if (!googleToken || !role) {
@@ -49,10 +48,20 @@ router.post("/google-auth", async (req, res) => {
                     fullName: payload?.name || "",
                     profileImage: payload?.picture || "",
                     onlineStatus: "offline",
-                    role: "rider",
-                    modeOfRegistration: "googleId"
+                    role: role || "rider",
+                    modeOfRegistration: "googleId",
+                    isUserVerified: true,
+                    isEmailVerified: true,
                 },
             });
+        }
+
+        if (user && user.isBlocked) {
+            return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Your account has been blocked" });
+        }
+
+        if (user && user.modeOfRegistration !== "googleId") {
+            return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
         }
 
         const accessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role });
@@ -67,9 +76,7 @@ router.post("/google-auth", async (req, res) => {
 
         return res.status(Statuscode.SUCCESS).json({
             message: "Sign-in successful",
-            data: {
-                user: { ...userWithoutPassword, accessToken, refreshToken }
-            }
+            data: { ...userWithoutPassword, accessToken }
         });
 
     } catch (error) {

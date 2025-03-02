@@ -6,8 +6,8 @@ import { Statuscode } from "../utils/Statuscode";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { generateToken } from "../utils/jwt";
 import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
-
-const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
+import { sendEmail } from "../utils/postMarkEmailService";
+import { expirationTime } from "../utils/timeExpiry";
 
 
 export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
@@ -120,62 +120,62 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
     }
   };
-  
 
 
   export const generateNewOTP = async (req: Request, res: Response) => {
 
     const { phoneNumber, email } = req.body;
     
-    let formattedPhoneNumber = phoneNumber ? formatPhoneNumber(phoneNumber) : null;
+    let formattedPhoneNumber: string | null = null;
   
     try {
-  
-      if (!formattedPhoneNumber && !email) {
-        return res.status(Statuscode.BAD_REQUEST).json({ message: "Phone number or email is required" });
+
+      if(phoneNumber) {
+        formattedPhoneNumber = formatPhoneNumber(phoneNumber);
       }
   
+      // 
       if (phoneNumber && !formattedPhoneNumber) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
       }
   
-      const OTP = generateOTP();
-
-  
-      let user = null;
-  
       // Search user by phoneNumber first, if provided. Otherwise, search by email.
-      if (formattedPhoneNumber) {
-        user = await prisma.user.findUnique({ where: { phoneNumber: formattedPhoneNumber } });
-      } 
-      if (!user && email) {
-        user = await prisma.user.findUnique({ where: { email } });
-      }
+      const user = await prisma.user.findFirst({ where: { OR: [
+        { phoneNumber: formattedPhoneNumber },
+        { email }
+      ]}});
   
       if (!user) {
         return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
       }
+
+      const OTP = generateOTP();
   
       // Upsert OTP
       await prisma.oTP.upsert({
         where: { userId: user.id },
-        update: { otp: OTP, expiresAt },
-        create: { otp: OTP, expiresAt, user: { connect: { id: user.id } } },
+        update: { otp: OTP, expiresAt: expirationTime() },
+        create: { otp: OTP, expiresAt: expirationTime(), user: { connect: { id: user.id } } },
       });
   
       // Send OTP via SMS or Email
+      const message = `Your OTP is ${OTP}. It will expire in 10 minutes. Do not share it with anyone.`;
       if (formattedPhoneNumber) {
-        const message = `Your OTP is ${OTP}. It will expire in 10 minutes. Do not share it with anyone.`;
         // Send OTP to phoneNumber via Kudi SMS (Uncomment when implemented)
         // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
-        
+
         // if (!kudiSmsResponse) {
         //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
         // }
-  
         return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your phone for new OTP" });
       }
-  
+
+      if(!user.email) {
+        return res.status(Statuscode.NOT_FOUND).json({ message: "User email not found" });
+      }
+
+      // Send OTP via email
+      await sendEmail(user.email, "Your OTP Code", OTP);
       return res.status(Statuscode.SUCCESS).json({ message: "Kindly check your email for new OTP" });
   
     } catch (error) {

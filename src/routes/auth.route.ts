@@ -1,6 +1,6 @@
 import express from "express";
 
-import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber } from "../controllers/auth.controller";
+import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber, updateUserProfile } from "../controllers/auth.controller";
 import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup, validateUserLocation } from "../validators";
 import { generateNewOTP, verifyEmailOTP, VerifyPhoneNumberUsingOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
@@ -33,6 +33,7 @@ router.post("/verify-signin-with-phone-number", VerifySignInWithPhoneNumber);
 
 // Password endpoints
 router.post("/create-password", validateCreatePassword, validateRequest, createPassword);
+router.patch("/update-profile", authenticateUser, updateUserProfile);
 
 router.post("/forgot-password", validateForgotPassword, validateRequest, forgotPassword);
 

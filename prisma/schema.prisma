@@ -24,7 +24,7 @@ model User {
   onlineStatus          OnlineStatus
   role                  UserRole
   modeOfRegistration    ModeOfRegistration
-  userTimezone          DateTime           @default(now())
+  userTimezone          String?
   country               String?
   city                  String?
   refreshToken          String?
@@ -52,6 +52,8 @@ model Ride {
   dropoffLocation  String
   dropoffLatitude  Float
   dropoffLongitude Float
+  userTimezone     String
+  expiresAt        DateTime?
   createdAt        DateTime     @default(now())
 
   user   User  @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
