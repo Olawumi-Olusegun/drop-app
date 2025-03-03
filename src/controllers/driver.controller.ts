@@ -1,7 +1,87 @@
 
 import { Request, Response } from "express";
-import { getAvailableDrivers } from "../services/driver.service";
+import { getAvailableDrivers, registerDriver, updateDriverDocuments } from "../services/driver.service";
 import { Statuscode } from "../utils/Statuscode";
+import { verificationType } from "@prisma/client";
+//import { verificationType } from '@prisma/client';
+
+
+
+export const registerDriverController = async(req: Request, res: Response)=>{
+
+  try{
+
+ 
+    const {
+      userId,
+      verificationType,
+      firstName,
+      middleName,
+      lastName,
+      nationality,
+      dateOfBirth,
+      address,
+      city,
+      postalCode,
+      country,
+      issuingCountry,
+      documentType,
+      nin,
+      licenseNumber,
+      licenseExpiryDate,
+      carBrand,
+      carModel,
+      licensePlateNumber,
+      carColour
+    } = req.body;
+
+
+    const result = await registerDriver({
+      userId,
+      verificationType,
+      firstName,
+      middleName,
+      lastName,
+      nationality,
+      dateOfBirth,
+      address,
+      city,
+      postalCode,
+      country,
+      issuingCountry,
+      documentType,
+      nin,
+      licenseNumber,
+      licenseExpiryDate,
+      carBrand,
+      carModel,
+      licensePlateNumber,
+      carColour
+    })
+
+    res.status(201).json({
+      message: "Driver registered Succesfully",
+      driver: result.driver,
+     // uploadUrls: result.preSignedUrls
+    })
+  }
+  catch(error){
+      console.log(error)
+      res.status(500).json({message: error})
+  }
+}
+
+export const DocumentUploadController = async(req: Request, res: Response)=>{
+  const payload = req.body
+  const result = await updateDriverDocuments(payload)
+}
+
+
+
+
+
+
+
 
 
 export const getDriversController = async (req: Request, res: Response) => {

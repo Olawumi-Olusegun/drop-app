@@ -31,7 +31,8 @@ model User {
     createdAt             DateTime           @default(now())
     updatedAt             DateTime           @updatedAt
 
-    otp OTP?
+    otp    OTP?
+    Driver Driver?
 }
 
 model OTP {
@@ -58,4 +59,71 @@ enum ModeOfRegistration {
     phoneNumber
     email
     googleId
+}
+
+model Driver {
+    id                  String             @id @default(uuid())
+    userId              String             @unique
+    firstName           String
+    middleName          String?
+    lastName            String
+    nationality         String
+    dateOfBirth         DateTime
+    fullAddress         String
+    city                String
+    postalCode          String
+    country             String
+    totalCompletedRides Int                @default(0)
+    registrationStatus  RegistrationStatus
+    registrationDate    DateTime           @default(now())
+    approvalDate        DateTime?
+    approvedBy          String?
+
+    user            User                   @relation(fields: [userId], references: [id])
+    identifications DriverIdentification[]
+    vehicles        DriverVehicle[]
+}
+
+enum RegistrationStatus {
+    pending
+    incomplete
+    approved
+    rejected
+    suspended
+}
+
+model DriverIdentification {
+    id                   String           @id @default(uuid())
+    driverId             String
+    issuingCountry       String
+    documentType         VerificationType
+    nin                  String?
+    passportPhotoUrl     String?
+    idCardFront          String?
+    idCardBack           String?
+    licenseNumber        String
+    licenseExpiryDate    String
+    licensePhotoUrl      String
+    selfieWithLicenseUrl String
+    driver               Driver           @relation(fields: [driverId], references: [id])
+}
+
+enum VerificationType {
+    NIN
+    Passport
+    ID_Card
+}
+
+model DriverVehicle {
+    id                  String  @id @default(uuid())
+    driverId            String
+    carBrand            String
+    carModel            String
+    licensePlateNumber  String  @unique
+    carColor            String
+    carPictureUrl       String?
+    vehicleRegistration String
+    roadWorthiness      String?
+
+    driver Driver @relation(fields: [driverId], references: [id])
 }
