@@ -201,7 +201,7 @@ export const createPassword = async (req: Request, res: Response) => {
         ],
       },
     });
-    
+
     if (!user) {
       return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
     }
@@ -263,10 +263,8 @@ export const signInWithEmail = async (req: Request, res: Response) => {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
      }
  
-     const { password: appPassword, ...userWithoutPassword } = user;
- 
      // Check if password is correct
-     const isValidPassword = await isPasswordValid(password, appPassword);
+     const isValidPassword = await isPasswordValid(password, user.password);
   
      if (!isValidPassword) {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
@@ -275,17 +273,45 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       const accessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
       const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
 
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: user.id },
-        data: { refreshToken },
+        data: { refreshToken, accessToken, onlineStatus: "online" },
       });
 
-     return res.status(Statuscode.SUCCESS).json({ message: "Sign-in successful",
-      data: { user: {...userWithoutPassword, accessToken }
+      const {
+        id,
+        fullName, 
+        email, 
+        phoneNumber,
+        longitude,
+        latitude, 
+        onlineStatus, 
+        role, 
+        modeOfRegistration,
+        userTimezone,
+        profileImage,
+      } = updatedUser;
+
+     return res.status(Statuscode.SUCCESS).json({ 
+      message: "Signed in successfully",
+      data: { 
+        user: {
+            id,
+            fullName, 
+            email, 
+            phoneNumber,
+            longitude,
+            latitude, 
+            onlineStatus, 
+            role, 
+            modeOfRegistration,
+            userTimezone,
+            profileImage,
+            accessToken 
+      }
      }});
   
    } catch (error) {
-     console.error("Sign-in error:", error);
      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
    }
  };
@@ -384,7 +410,14 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
     }
 
-    if(!user || !user.refreshToken) {
+    console.log(authHeader === user?.accessToken)
+
+    if(authHeader !== user?.accessToken) {
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+      return;
+    }
+
+    if(!user.refreshToken) {
       return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
     }
 
@@ -399,7 +432,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken: newRefreshToken },
+      data: { refreshToken: newRefreshToken, accessToken: newAccessToken },
     });
 
    return res.status(Statuscode.SUCCESS).json({

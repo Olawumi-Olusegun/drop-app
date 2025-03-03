@@ -28,6 +28,7 @@ model User {
   country               String?
   city                  String?
   refreshToken          String?
+  accessToken           String?
   profileImage          String?
   isUserVerified        Boolean            @default(false)
   createdAt             DateTime           @default(now())
