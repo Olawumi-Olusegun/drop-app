@@ -451,17 +451,17 @@ export const createUsername = async (req: Request, res: Response) => {
 
   // `identifier` can be either email or phoneNumber
   const { identifier, fullName } = req.body;
- 
+
   try {
     // Find user by email or phoneNumber
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ email: identifier }, { phoneNumber: identifier }],
+        OR: [{ email: identifier }, { phoneNumber: formatPhoneNumber(identifier) }],
       },
     });
 
     if (!user) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
     }
 
      await prisma.user.update({
