@@ -87,9 +87,6 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       //   return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired" });
       // }
 
-      console.log(user.otp.expiresAt)
-      console.log( new Date(user.otp.expiresAt).getTime() < Date.now())
-
       // Check if OTP exists and is expired
       if (!user.otp || !user.otp.expiresAt || new Date(user.otp.expiresAt).getTime() < Date.now()) {
         return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired" });
@@ -236,22 +233,43 @@ export const verifyPhoneNumberOTP = async (req: AuthRequest, res: Response) => {
       const updatedUser = await prisma.$transaction([
         prisma.user.update({
           where: { id: user.id },
-          data: { refreshToken, onlineStatus: "online" },
+          data: { refreshToken, accessToken, onlineStatus: "online" },
         }),
         prisma.oTP.delete({ where: { userId: user.id } }),
       ]);
         
       // Remove password before sending the user data
       const { 
-        password: appPassword,
-        refreshToken: appRefreshToken,
-        ...userWithoutPassword
+        id,
+        fullName, 
+        email, 
+        phoneNumber,
+        longitude,
+        latitude, 
+        onlineStatus, 
+        role: appRole, 
+        modeOfRegistration,
+        userTimezone,
+        profileImage,
       } = updatedUser[0];
   
       return res.status(Statuscode.SUCCESS).json({
         message: "Sign-in successful",
         data: {
-          user: { ...userWithoutPassword, accessToken },
+          user: { 
+            id,
+            fullName, 
+            email, 
+            phoneNumber,
+            longitude,
+            latitude, 
+            onlineStatus, 
+            role: appRole,
+            modeOfRegistration,
+            userTimezone,
+            profileImage,
+            accessToken 
+          },
         },
       });
     } catch (error) {

@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { AuthRequest } from "../types";
 import { Statuscode } from "../utils/Statuscode";
 import { UserRole } from "@prisma/client";
+import prisma from "../config/db";
 
 
 interface VerifyToken extends JwtPayload {
@@ -10,7 +11,7 @@ interface VerifyToken extends JwtPayload {
   role: UserRole;
 }
 
-export const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
 
   const authHeader = req.headers["authorization"];
 
@@ -41,6 +42,24 @@ export const authenticateUser = (req: Request, res: Response, next: NextFunction
       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
       return;
     }
+    
+      const userExist = await prisma.user.findUnique({
+        where: { id: decoded?.userId },
+        select: { id: true, accessToken: true }
+      });
+
+      if(!userExist) {
+        res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Unrecognisable user identity" });
+        return;
+      }
+
+      console.log(authHeader === userExist.accessToken)
+
+      if(authHeader !== userExist.accessToken) {
+        res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+        return;
+      }
+
 
     req.user = {
       userId: decoded.userId,
