@@ -3,13 +3,14 @@ import prisma from "../config/db";
 import { Statuscode } from "../utils/Statuscode";
 import { expirationTime } from "../utils/timeExpiry";
 import { AuthRequest } from "../types";
+import haversineDistance from "haversine-distance";
 
 
 export const requestRide = async (req: Request, res: Response) => {
 
   const userId = (req as AuthRequest).user?.userId!;
 
-    const {  rider, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude, userTimezone } = req.body;
+    const {  rider, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude, userTimezone, price } = req.body;
 
     try {
   
@@ -40,6 +41,7 @@ export const requestRide = async (req: Request, res: Response) => {
             dropoffLatitude,
             dropoffLongitude,
             userTimezone,
+            // price,
             expiresAt: expirationTime(15) //The ride expires after 15 minutes
         } });
   
@@ -160,3 +162,66 @@ export const getRideBids = async (req: Request, res: Response) => {
     }
   };
   
+
+  export const searchAvailableRides = async (req: Request, res: Response) => {
+    try {
+
+      const { latitude, longitude } = req.query;
+  
+      if (!latitude || !longitude) {
+        return res.status(400).json({ error: "Latitude and Longitude are required" });
+      }
+  
+      const userLocation = {
+        latitude: parseFloat(latitude as string),
+        longitude: parseFloat(longitude as string),
+      };
+  
+      // Fetch all pending rides from the database
+      const rides = await prisma.ride.findMany({
+        where: { status: "pending" },
+        select: {
+          id: true,
+          pickupLocation: true,
+          dropoffLocation: true,
+          pickupLatitude: true,
+          pickupLongitude: true,
+          user: true,
+        },
+      });
+  
+      // Filter rides within a 5km radius and calculate distance
+      const nearbyRides = rides
+        .map((ride) => {
+          const rideLocation = {
+            latitude: ride.pickupLatitude,
+            longitude: ride.pickupLongitude,
+          };
+  
+          const distance = haversineDistance(userLocation, rideLocation) / 1000; // Convert meters to km
+  
+          return {
+            id: ride.id,
+            fullName: ride.user.fullName ?? "",
+            farePrice: "5000",
+            pickupLocation: ride.pickupLocation,
+            dropoffLocation: ride.dropoffLocation,
+            pickupLatitude: ride.pickupLatitude,
+            pickupLongitude: ride.pickupLongitude,
+            distance: {
+              value: parseFloat(distance.toFixed(2)), // Round to 2 decimal places
+              unit: "km",
+            },
+          };
+        })
+        .filter((ride) => ride.distance.value <= 5); // Filter rides within 5km
+  
+      return res.json({ 
+        message: "Available drivers", 
+        data: { rides: nearbyRides }
+      });
+    } catch (error) {
+      console.error("Error searching for rides:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };

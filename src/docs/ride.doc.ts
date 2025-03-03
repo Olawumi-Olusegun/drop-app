@@ -333,3 +333,106 @@
  *       500:
  *         description: Internal server error.
  */
+
+
+/**
+ * @swagger
+ * /api/v1/search-available-rides:
+ *   get:
+ *     summary: Search for available rides within a 5km radius
+ *     description: |
+ *       Retrieves a list of available rides within a 5km radius based on the user's latitude and longitude.
+ *       
+ *       **Example Request URL:**
+ *       ```
+ *       /api/v1/search-available-rides?latitude=40.712776&longitude=-74.005974
+ *       ```
+ *     tags:
+ *       - Rider
+ *     parameters:
+ *       - in: query
+ *         name: latitude
+ *         schema:
+ *           type: number
+ *         required: true
+ *         description: The latitude of the user's location.
+ *       - in: query
+ *         name: longitude
+ *         schema:
+ *           type: number
+ *         required: true
+ *         description: The longitude of the user's location.
+ *     responses:
+ *       200:
+ *         description: A list of available rides within 5km.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 rides:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: "6b1e7972-006b-48ca-92a9-7a4b5a1339e2"
+ *                         description: The unique ride ID.
+ *                       farePrice:
+ *                         type: string
+ *                         example: "5000"
+ *                         description: Price for the ride.
+ *                       fullName:
+ *                         type: string
+ *                         example: "John Doe"
+ *                         description: Name of the driver.
+ *                       pickupLocation:
+ *                         type: string
+ *                         example: "123 Main Street"
+ *                         description: The pickup location of the ride.
+ *                       dropoffLocation:
+ *                         type: string
+ *                         example: "456 Oak Avenue"
+ *                         description: The dropoff location of the ride.
+ *                       pickupLatitude:
+ *                         type: number
+ *                         example: 40.712776
+ *                         description: The latitude of the pickup location.
+ *                       pickupLongitude:
+ *                         type: number
+ *                         example: -74.005974
+ *                         description: The longitude of the pickup location.
+ *                       distance:
+ *                         type: object
+ *                         properties:
+ *                           value:
+ *                             type: number
+ *                             format: float
+ *                             example: 3.8
+ *                             description: The distance of the ride from the user's location.
+ *                           unit:
+ *                             type: string
+ *                             example: "km"
+ *                             description: The unit of distance measurement (kilometers).
+ *       400:
+ *         description: Bad request due to missing latitude or longitude.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Latitude and Longitude are required"
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Internal server error"
+ */

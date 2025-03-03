@@ -34,8 +34,8 @@ model User {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   otp                   OTP?
-  ridesAsUser           Ride[]             @relation(name: "UserRides")
-  ridesAsDriver         Ride[]             @relation(name: "DriverRides")
+  ridesAsDriver         Ride[]             @relation("DriverRides")
+  ridesAsUser           Ride[]             @relation("UserRides")
   rideBids              RideBid[]
   rideCancellations     RideCancel[]
 }
@@ -45,8 +45,6 @@ model Ride {
   userId           String
   driverId         String?
   status           RideStatus   @default(pending)
-  bids             RideBid[]
-  cancellations    RideCancel[]
   pickupLocation   String
   pickupLatitude   Float
   pickupLongitude  Float
@@ -56,9 +54,10 @@ model Ride {
   userTimezone     String
   expiresAt        DateTime?
   createdAt        DateTime     @default(now())
-
-  user   User  @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
-  driver User? @relation(name: "DriverRides", fields: [driverId], references: [id])
+  driver           User?        @relation("DriverRides", fields: [driverId], references: [id])
+  user             User         @relation("UserRides", fields: [userId], references: [id], onDelete: Cascade)
+  bids             RideBid[]
+  cancellations    RideCancel[]
 }
 
 model RideBid {
@@ -68,9 +67,8 @@ model RideBid {
   amount    Float
   status    BidStatus @default(pending)
   createdAt DateTime  @default(now())
-
-  ride   Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  driver User @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver    User      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  ride      Ride      @relation(fields: [rideId], references: [id], onDelete: Cascade)
 }
 
 model RideCancel {
@@ -79,9 +77,8 @@ model RideCancel {
   rideId    String
   reason    String
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model OTP {
@@ -89,8 +86,8 @@ model OTP {
   otp       String
   expiresAt DateTime
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum OnlineStatus {
