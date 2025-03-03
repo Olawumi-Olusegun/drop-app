@@ -345,8 +345,8 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified yet" });
     }
 
-    if (user && user.modeOfRegistration !== "phoneNumber") {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
+    if (user && !user.phoneNumber) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Phonenumber not found" });
     }
 
     // Generate OTP
@@ -456,7 +456,7 @@ export const createUsername = async (req: Request, res: Response) => {
     // Find user by email or phoneNumber
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ email: identifier }, { phoneNumber: formatPhoneNumber(identifier) }],
+        OR: [{ email: identifier }, { phoneNumber: formatPhoneNumber(identifier) || "123" }],
       },
     });
 
