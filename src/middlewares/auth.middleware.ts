@@ -2,31 +2,64 @@ import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { AuthRequest } from "../types";
 import { Statuscode } from "../utils/Statuscode";
+import { UserRole } from "@prisma/client";
+import prisma from "../config/db";
 
 
+interface VerifyToken extends JwtPayload {
+  userId: string;
+  role: UserRole;
+}
 
-export const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
 
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
+    res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
+    return;
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader?.split(" ")[1];
 
   if (!token) {
-    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: No token provided" });
+    res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: No token provided" });
+    return;
   }
 
-  const secret = process.env.JWT_SECRET || "";
+  const secret = process.env.JWT_ACCESS_TOKEN_SECRET || "";
+
+  if(!secret) {
+    res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token!" });
+    return;
+  }
 
   try {
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+  
+    const decoded = jwt.verify(token, secret) as VerifyToken;
 
     if (!decoded || !decoded?.userId) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+      return;
     }
+    
+      const userExist = await prisma.user.findUnique({
+        where: { id: decoded?.userId },
+        select: { id: true, accessToken: true }
+      });
+
+      if(!userExist) {
+        res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Unrecognisable user identity" });
+        return;
+      }
+
+      console.log(authHeader === userExist.accessToken)
+
+      if(authHeader !== userExist.accessToken) {
+        res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+        return;
+      }
+
 
     req.user = {
       userId: decoded.userId,
@@ -36,17 +69,23 @@ export const authenticateUser = (req: Request, res: Response, next: NextFunction
     next();
 
   } catch (error) {
+
     if (error instanceof jwt.TokenExpiredError) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token has expired" });
-    }
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
-    }
-    if (error instanceof jwt.NotBeforeError) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token not active yet" });
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token has expired" });
+      return;
     }
 
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+      return;
+    }
+    if (error instanceof jwt.NotBeforeError) {
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token not active yet" });
+      return;
+    }
+
+    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+    return;
   }
 };
 

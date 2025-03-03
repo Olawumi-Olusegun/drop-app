@@ -4,11 +4,11 @@ import { hashPassword } from "../utils/hashPassword";
 import { generateOTP } from "../utils/generateOTP";
 import { Statuscode } from "../utils/Statuscode";
 import { sendEmail } from "../utils/postMarkEmailService";
+import { formatPhoneNumber } from "../utils/formatPhoneNumber";
+import { expirationTime } from "../utils/timeExpiry";
 
-const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
 export const forgotPassword = async (req: Request, res: Response) => {
-  
   
   const { email, phoneNumber } = req.body;
 
@@ -16,8 +16,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     let user = null;
 
-    if (phoneNumber) {
-      user = await prisma.user.findFirst({ where: { phoneNumber } });
+    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
+    if (formattedPhoneNumber) {
+      user = await prisma.user.findFirst({ where: { phoneNumber: formattedPhoneNumber } });
     } else if (email) {
       user = await prisma.user.findUnique({ where: { email } });
     }
@@ -32,12 +34,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Store OTP in the database
     await prisma.oTP.upsert({
       where: { userId: user.id },
-      update: { otp, expiresAt: otpExpiresAt },
-      create: { userId: user.id, otp, expiresAt: otpExpiresAt },
+      update: { otp, expiresAt: expirationTime().toISOString() },
+      create: { userId: user.id, otp, expiresAt: expirationTime().toISOString() },
     });
 
     // Send OTP via Email or SMS
-    if (phoneNumber) {
+    if (formattedPhoneNumber) {
       // const smsResponse = await sendSMSWithKudiSMS(phoneNumber, `Your OTP is ${otp}. It expires in 10 minutes.`);
       // if (!smsResponse) {
       //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to send OTP via SMS" });
@@ -72,19 +74,19 @@ export const resetPassword = async (req: Request, res: Response) => {
             return res.status(Statuscode.NOT_FOUND).json({ message: "Invalid OTP or user not found" });
         }
   
-      if (!userOTP || !userOTP.otp) {
-        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid OTP or user not found" });
-      }
+        if (!userOTP || !userOTP.otp) {
+          return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid OTP or user not found" });
+        }
   
-      // Check OTP expiration
-      if (new Date(userOTP.expiresAt) < new Date()) {
-        return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, request a new one" });
-      }
-  
-      // Verify OTP
-      if (userOTP.otp !== otp) {
-        return res.status(Statuscode.BAD_REQUEST).json({ message: "Incorrect OTP" });
-      }
+        // Check OTP expiration
+        if (new Date(userOTP.expiresAt) < new Date()) {
+          return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, request a new one" });
+        }
+    
+        // Verify OTP
+        if (userOTP.otp !== otp) {
+          return res.status(Statuscode.BAD_REQUEST).json({ message: "Incorrect OTP" });
+        }
   
       // Hash the new password
       const hashedPassword = await hashPassword(password);

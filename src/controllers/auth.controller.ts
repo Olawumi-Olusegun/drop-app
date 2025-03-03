@@ -5,14 +5,11 @@ import prisma from "../config/db";
 import { generateOTP } from "../utils/generateOTP";
 import { Statuscode } from "../utils/Statuscode";
 import { hashPassword, isPasswordValid } from "../utils/hashPassword";
-import { sendEmail } from "../utils/postMarkEmailService";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
+import { sendEmail } from "../utils/postMarkEmailService";
 import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
 import { Prisma } from "@prisma/client";
-
-
-const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
-
+import { expirationTime } from "../utils/timeExpiry";
 
 /**
  * @desc signupWithPhoneNumber
@@ -58,7 +55,7 @@ export const signupWithPhoneNumber = async (req: Request, res: Response) => {
         data: {
           userId: createdUser.id,
           otp: phoneNumberOTP,
-          expiresAt: otpExpiresAt,
+          expiresAt: expirationTime(),
         },
       });
 
@@ -122,10 +119,9 @@ export const signupWithEmail = async (req: Request, res: Response) => {
         data: {
           userId: createdUser.id,
           otp: emailOTP,
-          expiresAt: otpExpiresAt,
+          expiresAt: expirationTime().toISOString(),
         },
       });
-
       return createdUser;
     });
 
@@ -181,24 +177,30 @@ export const signupWithGoogle = async (req: Request, res: Response) => {
 
 export const createPassword = async (req: Request, res: Response) => {
   
-  const { email, googleId, phoneNumber, password, confirmPassword, } = req.body;
+  const { email, googleId, phoneNumber, password, confirmPassword, modeOfRegistration } = req.body;
 
-  let user;
+ 
+  let formattedPhoneNumber: string | null = null;
+
+  if(phoneNumber) {
+    formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+    if (!formattedPhoneNumber) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
+    }
+  }
+
 
   try {
 
-    user = await prisma.user.findFirst({
+    const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email },
-          { phoneNumber },
-          {
-            AND: [{ email }, { googleId }],
-          },
+          ...(modeOfRegistration === "email" ? [{ email }] : []),
+          ...(modeOfRegistration === "googleId" ? [{ email, googleId }] : []),
+          ...(modeOfRegistration === "phoneNumber" ? [{ phoneNumber: formattedPhoneNumber }] : []),
         ],
       },
     });
-    
 
     if (!user) {
       return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
@@ -234,7 +236,6 @@ export const createPassword = async (req: Request, res: Response) => {
 
 
 export const signInWithEmail = async (req: Request, res: Response) => {
-
   // `identifier` can be either email or phoneNumber
    const { identifier, password } = req.body;
  
@@ -250,10 +251,20 @@ export const signInWithEmail = async (req: Request, res: Response) => {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
      }
  
-     const { password: appPassword, ...userWithoutPassword } = user;
+     if (user && user.isBlocked) {
+       return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Your account has been blocked" });
+     }
+ 
+     if (user && !user.isUserVerified) {
+       return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified yet" });
+     }
+ 
+     if (user && user.modeOfRegistration !== "email") {
+       return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
+     }
  
      // Check if password is correct
-     const isValidPassword = await isPasswordValid(password, appPassword);
+     const isValidPassword = await isPasswordValid(password, user.password);
   
      if (!isValidPassword) {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
@@ -262,21 +273,48 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       const accessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
       const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
 
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: user.id },
-        data: { refreshToken },
+        data: { refreshToken, accessToken, onlineStatus: "online" },
       });
 
-     return res.status(Statuscode.SUCCESS).json({ message: "Sign-in successful",
-      data: { user: {...userWithoutPassword, accessToken }
+      const {
+        id,
+        fullName, 
+        email, 
+        phoneNumber,
+        longitude,
+        latitude, 
+        onlineStatus, 
+        role, 
+        modeOfRegistration,
+        userTimezone,
+        profileImage,
+      } = updatedUser;
+
+     return res.status(Statuscode.SUCCESS).json({ 
+      message: "Signed in successfully",
+      data: { 
+        user: {
+            id,
+            fullName, 
+            email, 
+            phoneNumber,
+            longitude,
+            latitude, 
+            onlineStatus, 
+            role, 
+            modeOfRegistration,
+            userTimezone,
+            profileImage,
+            accessToken 
+      }
      }});
   
    } catch (error) {
-     console.error("Sign-in error:", error);
      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
    }
  };
-
 
  
  export const signInWithPhoneNumber = async (req: Request, res: Response) => {
@@ -295,19 +333,29 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       where: { phoneNumber: formattedPhoneNumber },
     });
 
-    if (!user || !user.isUserVerified) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified" });
+    if (!user) {
+      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+    }
+
+    if (user && user.isBlocked) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Your account has been blocked" });
+    }
+
+    if (user && !user.isUserVerified) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified yet" });
+    }
+
+    if (user && user.modeOfRegistration !== "phoneNumber") {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
     }
 
     // Generate OTP
     const phoneNumberOTP = generateOTP();
     
-
-
     const createdOTP = await prisma.oTP.upsert({
       where: { userId: user.id },
-      update: { otp: phoneNumberOTP, expiresAt: otpExpiresAt },
-      create: { otp: phoneNumberOTP, expiresAt: otpExpiresAt, user: { connect: { id: user.id } } },
+      update: { otp: phoneNumberOTP, expiresAt: expirationTime() },
+      create: { otp: phoneNumberOTP, expiresAt: expirationTime(), user: { connect: { id: user.id } } },
     });
 
     
@@ -362,7 +410,14 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
     }
 
-    if(!user || !user.refreshToken) {
+    console.log(authHeader === user?.accessToken)
+
+    if(authHeader !== user?.accessToken) {
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+      return;
+    }
+
+    if(!user.refreshToken) {
       return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
     }
 
@@ -377,14 +432,13 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken: newRefreshToken },
+      data: { refreshToken: newRefreshToken, accessToken: newAccessToken },
     });
 
    return res.status(Statuscode.SUCCESS).json({
     message: "Token refreshed successfully",
     data: {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
+      accessToken: newAccessToken
    }});
 
   } catch (error) {
@@ -434,46 +488,92 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
   }
 
   try {
-    // Find user by email and role
-    const user = await prisma.user.findFirst({
-      where: { email, role },
-    });
+        // Find user by role and (email or phoneNumber)
+        const user = await prisma.user.findFirst({
+          where: {
+            role,
+            OR: [
+              { email },
+              { phoneNumber: formattedPhoneNumber },
+            ],
+          },
+          select: {
+            id: true,
+            email: true,
+            phoneNumber: true,
+            role: true
+          }
+        });
+
 
     if (!user) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
     }
 
-    // Check if another user already has this phone number
-    const existingPhoneUser = await prisma.user.findFirst({
-      where: { phoneNumber: formattedPhoneNumber },
-    });
-
-    if (existingPhoneUser) {
+    if (user && user.phoneNumber === formattedPhoneNumber) {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "A user with this phone number already exists" });
     }
 
     // Generate OTP
     const phoneNumberOTP = generateOTP();
 
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedUser = await tx.user.update({
         where: { id: user.id },
         data: { phoneNumber: formattedPhoneNumber },
       });
-
       await tx.oTP.upsert({
         where: { userId: updatedUser.id },
-        update: { otp: phoneNumberOTP, expiresAt: otpExpiresAt },
-        create: { otp: phoneNumberOTP, expiresAt: otpExpiresAt, user: { connect: { id: user.id } } },
+        update: { otp: phoneNumberOTP, expiresAt: expirationTime() },
+        create: { otp: phoneNumberOTP, expiresAt: expirationTime(), user: { connect: { id: user.id } } },
       });
 
       return updatedUser;
     });
 
+    // ADD EMAIL SENDING OTP
     return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
 
   } catch (error) {
+    console.log(error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
   }
 };
 
+
+
+export const updateUserProfile = async (req: Request, res: Response) => {
+
+  const { fullName } = req.body;
+  const userId = (req as AuthRequest)?.user?.userId;
+
+  if(!userId) {
+    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+  }
+ 
+  try {
+
+    // Find authenticated user
+    const user = await prisma.user.findFirst({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+    }
+
+    const formData = {
+      ...(fullName && { fullName }),
+    }
+
+     await prisma.user.update({
+       where: { id: user.id },
+       data: { ...formData },
+     });
+
+    return res.status(Statuscode.SUCCESS).json({ message: "Profile updated successfully"});
+ 
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+  }
+}

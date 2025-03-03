@@ -32,7 +32,7 @@ const swaggerOptions: swaggerJSDoc.Options = {
           url: "https://drop-app-ytc9.onrender.com",
         },
       ],
-    apis: ["./src/routes/*.ts"],
+    apis: ["./src/docs/*.ts"],
     
 }
 
