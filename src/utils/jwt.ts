@@ -4,7 +4,7 @@ import jwt, { JwtPayload, TokenExpiredError, JsonWebTokenError, NotBeforeError }
 export const generateToken = ({
   userId,
   role,
-  expiresIn = "1h",
+  expiresIn = "5h",
   secret = process.env.JWT_ACCESS_TOKEN_SECRET || "",
 }: {
   userId: string;
