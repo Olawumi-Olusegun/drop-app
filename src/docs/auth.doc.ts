@@ -496,6 +496,10 @@
  *               confirmPassword:
  *                 type: string
  *                 example: "SecurePassword123!"
+ *               modeOfRegistration:
+ *                 type: string
+ *                 example: "email"
+ *                 description: Mode of registeration either email or phoneNumber.
  *     responses:
  *       200:
  *         description: Password successfully created
@@ -834,7 +838,7 @@
  *                 example: "rider"
  *                 description: The role of the user.
  *     responses:
-  *       200:
+ *       200:
  *         description: OTP verified successfully.
  *         content:
  *           application/json:

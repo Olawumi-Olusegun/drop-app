@@ -43,7 +43,7 @@ router.post("/reset-password", validateResetPassword, validateRequest, resetPass
 router.get("/refresh-token", refreshToken);
 
 // Create username
-router.post("/create-username", authenticateUser,  createUsername);
+router.post("/create-username", createUsername);
 
 router.post("/add-user-phone-number", AddUserPhoneNumber);
 
