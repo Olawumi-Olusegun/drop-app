@@ -20,19 +20,69 @@ model User {
   latitude              Float?
   isEmailVerified       Boolean            @default(false)
   isNotification        Boolean            @default(false)
+  isBlocked             Boolean            @default(false)
   onlineStatus          OnlineStatus
   role                  UserRole
   modeOfRegistration    ModeOfRegistration
+  userTimezone          String?
   country               String?
   city                  String?
   refreshToken          String?
+  accessToken           String?
   profileImage          String?
   isUserVerified        Boolean            @default(false)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+  otp                   OTP?
+  Driver                Driver?
+  ridesAsUser           Ride[]             @relation(name: "UserRides")
+  ridesAsDriver         Ride[]             @relation(name: "DriverRides")
+  rideBids              RideBid[]
+  rideCancellations     RideCancel[]
+}
 
-  otp    OTP?
-  Driver Driver?
+model Ride {
+  id               String       @id @default(uuid())
+  userId           String
+  driverId         String?
+  status           RideStatus   @default(pending)
+  bids             RideBid[]
+  cancellations    RideCancel[]
+  pickupLocation   String
+  pickupLatitude   Float
+  pickupLongitude  Float
+  dropoffLocation  String
+  dropoffLatitude  Float
+  dropoffLongitude Float
+  userTimezone     String
+  expiresAt        DateTime?
+  createdAt        DateTime     @default(now())
+
+  user   User  @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
+  driver User? @relation(name: "DriverRides", fields: [driverId], references: [id])
+}
+
+model RideBid {
+  id        String    @id @default(uuid())
+  rideId    String
+  driverId  String
+  amount    Float
+  status    BidStatus @default(pending)
+  createdAt DateTime  @default(now())
+
+  ride   Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  driver User @relation(fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model RideCancel {
+  id        String   @id @default(uuid())
+  userId    String
+  rideId    String
+  reason    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
 }
 
 model OTP {
@@ -126,4 +176,18 @@ model DriverVehicle {
   roadWorthiness      String?
 
   driver Driver @relation(fields: [driverId], references: [id])
+}
+
+enum RideStatus {
+  pending
+  accepted
+  ongoing
+  completed
+  canceled
+}
+
+enum BidStatus {
+  pending
+  accepted
+  rejected
 }

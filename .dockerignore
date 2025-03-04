@@ -2,8 +2,7 @@ node_modules
 build
 dist
 .git
-.env
-.env.development
+.gitignore
+.dockerignore
 Dockerfile
-Dockerfile.dev
-docker-compose.yml
+docker-compose*

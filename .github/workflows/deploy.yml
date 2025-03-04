@@ -1,59 +1,51 @@
-name: CI/CD Pipeline to build and deploy backend to ECS
+name: CICD PIPELINE TO DEPLOY TO AWS ECS
 
 on:
   push:
-    branches: [olusegun] # Updated branch
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build, Push to ECR & Deploy to ECS
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Log in to DockerHub
-        run: echo "${{ secrets.DROP_RIDE_DOCKER_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DROP_RIDE_DOCKER_USER }}" --password-stdin
-
-      - name: Build Docker Image
-        run: docker build -t ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend .
-
-      - name: Push Image to DockerHub
-        run: docker push ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
-
-  deploy:
-    needs: build
-    runs-on: [drop-ride-aws-ec2] # Github self-hosted runner
-    steps:
-      - name: SSH into Server and Deploy
-        uses: appleboy/ssh-action@master
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "🚀 Pulling latest Docker image..."
-            docker pull ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-            echo "🛑 Stopping and removing old container..."
-            docker stop drop-app-backend || true
-            docker rm drop-app-backend || true
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-            echo "🧹 Removing old unused images..."
-            docker image prune -af || true
+      - name: Build and Push Docker Image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            echo "🚀 Starting new container..."
-            docker run -d -p 5150:5150 --name drop-app-backend --env-file .env \
-              -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
-              -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-              -e GOOGLE_CALLBACK_URL="${{ secrets.GOOGLE_CALLBACK_URL }}" \
-              -e DATABASE_PROVIDER="${{ secrets.DATABASE_PROVIDER }}" \
-              -e PORT="${{ secrets.PORT }}" \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e JWT_ACCESS_TOKEN_SECRET="${{ secrets.JWT_ACCESS_TOKEN_SECRET }}" \
-              -e JWT_REFRESH_TOKEN_SECRET="${{ secrets.JWT_REFRESH_TOKEN_SECRET }}" \
-              -e POSTMARK_SERVER_TOKEN="${{ secrets.POSTMARK_SERVER_TOKEN }}" \
-              -e DROP_INNOVATION_EMAIL="${{ secrets.DROP_INNOVATION_EMAIL }}" \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              ${{ secrets.DROP_RIDE_DOCKER_USER }}/drop-app-backend:latest
+      - name: Update ECS Task Definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
+          container-name: "your-container-name"
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-            echo "✅ Deployment completed!"
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true

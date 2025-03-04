@@ -1,9 +1,7 @@
-
 import { PrismaClient, RegistrationStatus, verificationType } from '@prisma/client';
 import { DocumentUploadPayload, DriverRegistrationInput } from "../types";
 import { generatePresignedUrl } from "../utils/s3";
 import {Response} from 'express';
-
 const prisma = new PrismaClient();
 
 
