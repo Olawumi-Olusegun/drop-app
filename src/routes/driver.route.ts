@@ -1,5 +1,5 @@
 import express from "express";
-import { getDriversController, registerDriverController } from "../controllers/driver.controller";
+import { DocumentUploadController, getDriversController, registerDriverController } from "../controllers/driver.controller";
 import { updateDriverDocuments } from "../services/driver.service";
 import { validateDriverRegistration, validateUpdateDriverDocuments } from "../validators/driverValidator";
 
@@ -302,7 +302,7 @@ router.post('/register',validateDriverRegistration , registerDriverController)
  *       500:
  *         description: Internal server error
  */
-router.post('/upload-documents', validateUpdateDriverDocuments , updateDriverDocuments)
+router.post('/upload-documents', validateUpdateDriverDocuments ,  DocumentUploadController)
 
 
 
