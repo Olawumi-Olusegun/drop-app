@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
-import { getAvailableDrivers, registerDriver, updateDriverDocuments } from "../services/driver.service";
+import { acceptRide, cancelRideBid, getAvailableDrivers, getAvailableRides, getRideDetails, notifyArrival, registerDriver, startRide, updateDriverDocuments } from "../services/driver.service";
 import { Statuscode } from "../utils/Statuscode";
 import { verificationType } from "@prisma/client";
 //import { verificationType } from '@prisma/client';
+import haversine from 'haversine-distance'
+import prisma from "../config/db";
+
 
 
 
@@ -61,7 +64,7 @@ export const registerDriverController = async(req: Request, res: Response)=>{
     res.status(201).json({
       message: "Driver registered Succesfully",
       driver: result.driver,
-     // uploadUrls: result.preSignedUrls
+     uploadUrls: result.preSignedUrls
     })
   }
   catch(error){
@@ -84,14 +87,112 @@ export const DocumentUploadController = async(req: Request, res: Response)=>{
 }
 
 
+export const getAvailableRidesController = async(req: Request, res: Response)=>{
+  try{
+    const driverLatitude = parseFloat(req.query.driverLatitude as string);
+    const driverLongitude = parseFloat(req.query.driverLongitude as string);
+    const maxDistance = req.query.maxDistance ? Number(req.query.maxDistance) : 10;
+    
+
+    const rides = await getAvailableRides(driverLatitude, driverLongitude, maxDistance)
+    res.status(200).json({success: true, rides})
+
+  }
+  catch(error){
+    res.status(500).json({error: "Internal Server error"})
+  }
+}
+
+export const getRideDetailsController = async(req: Request, res: Response)=>{
+  try{
+    const {rideId} = req.params
+    const ride = await getRideDetails(rideId)
+    if(!ride){
+      return res.status(404).json({error: "Ride not Found"})
+    }
+    res.status(200).json(ride)
+  }
+  catch(error){
+    res.status(500).json({error: 'Internal server Error'})
+  }
+}
+
+export const acceptRideController = async (req: Request, res: Response)=>{
+  try{
+    const {rideId} = req.params
+    const {driverId, proposedPrice} = req.body
+
+    const result = await acceptRide(rideId, driverId, proposedPrice)
+    res.status(200).json(result)
+  }
+  catch(error: any){
+    if(error.message === "Ride not found"){
+        return res.status(404).json({error: error.message})
+    }
+
+    if(error.message === "Ride is no longer available"){
+      return res.status(400).json({error: error.message})
+    }
+    res.status(500).json({error: "Internal server error"})
+  }
+}
 
 
+export const cancelRideBidController = async(req: Request, res: Response)=>{
+
+  try{
+    const {rideId} = req.params
+    const {driverId} = req.body
+
+    const updatedBid = await cancelRideBid(rideId, driverId)
+    res.status(200).json({message: "Bid cancelled successfully", bid: updatedBid})
+  }
+  catch(error: any){
+    if(error.message == "No pending bid found for this ride and driver"){
+      return res.status(404).json({error: "Internal server Error"})
+    }
+  }
+}
 
 
+export  const notifyArrivalController = async(req: Request, res: Response)=>{
+  try{
+    const {rideId} = req.params
+    const {driverId} = req.body
 
-import haversine from 'haversine-distance'
-import prisma from "../config/db";
+    const result = await notifyArrival(rideId, driverId)
+    res.status(200).json(result)
+  }
+  catch(error: any){
+    if(error.message === "Ride not found"){
+      return res.status(404).json({error: error.message})
+    }
+    res.status(500).json({error: "Internal server Error"})
+  }
+}
 
+export const startRideController = async (req: Request, res: Response)=>{
+
+  try{
+    const {rideId} = req.params
+    const {driverId} = req.body
+    const updatedRide = await startRide(rideId, driverId)
+
+    res.status(200).json(updatedRide)
+  }
+  catch(error: any){
+    if (error.message === 'Ride not found') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'Ride is not in Pending state' ||
+      error.message === 'Driver is not authorized to start this ride'){
+        return res.status(400).json({ error: error.message });
+      }
+
+      res.status(500).json({error: "Internal Server Error"})
+
+  }
+}
 export const getDriversController = async (req: Request, res: Response) => {
   try {
 
