@@ -1,7 +1,8 @@
-import { PrismaClient, RegistrationStatus, verificationType } from '@prisma/client';
+import { BidStatus, PrismaClient, RegistrationStatus, Ride, RideBid, RideStatus, verificationType } from '@prisma/client';
 import { DocumentUploadPayload, DriverRegistrationInput } from "../types";
 import { generatePresignedUrl } from "../utils/s3";
 import {Response} from 'express';
+import haversine from 'haversine-distance'
 const prisma = new PrismaClient();
 
 
@@ -159,7 +160,7 @@ export const registerDriver = async (data: DriverRegistrationInput)=>{
   const roadWorthiness = `drivers/${driver.id}/roadWorthiness.jpg`
   
   
-/*
+
   const [passPortPhotoUrl, idCardFrontUrl, idCardBackUrl, licensePhotoUrl, selfieWithLicenseUrl, carPictureUrl, vehicleRegistrationUrl, roadWorthinessUrl] = await Promise.all([
     generatePresignedUrl(passportPhotoKey),
     generatePresignedUrl(idCardFrontKey),
@@ -176,9 +177,8 @@ export const registerDriver = async (data: DriverRegistrationInput)=>{
     selfieWithLicenseUrl, carPictureUrl, vehicleRegistrationUrl,
      roadWorthinessUrl
   }
-     */
 
-  return {driver} //preSignedUrls}
+  return {driver, preSignedUrls}
 }
 
 export const updateDriverDocuments = async(payload: DocumentUploadPayload)=>{
@@ -212,3 +212,150 @@ export const updateDriverDocuments = async(payload: DocumentUploadPayload)=>{
   return { message: 'Documents updated successfully' };
 
 }
+
+const getBoundingBox = (lat:number, lng: number, radius: number)=>{
+
+  const earthRadius = 6371;
+  const deltaLat = (radius/earthRadius) * (180/Math.PI);
+  const deltaLng = (radius/earthRadius) *(180/Math.PI)/ Math.cos((lat*Math.PI)/180)
+
+  return{
+    minLat: lat - deltaLat,
+    maxLat: lat + deltaLat,
+    minLng: lng - deltaLng,
+    maxLng: lng + deltaLng,
+  }
+}
+
+
+export const getAvailableRides = async(
+  driverLat: number,
+  driverLng: number,
+  maxDistance: number
+): Promise<any[]> =>{
+
+  const {minLat, maxLat, minLng, maxLng} = getBoundingBox(driverLat, driverLng, maxDistance)
+  const rides = await prisma.ride.findMany({
+    where:{
+      status: 'pending',
+      pickupLatitude:{
+        gte: minLat,
+        lte: maxLat
+      },
+      pickupLongitude:{
+        gte: minLng,
+        lte: maxLng
+      }
+    },
+    orderBy:{
+      createdAt: 'asc'
+    }
+  })
+
+  return rides
+
+}
+
+export const getRideDetails = async(rideId: string): Promise< Ride| null> =>{
+  const ride = await prisma.ride.findUnique({
+    where: {id: rideId}
+  })
+
+  return ride
+}
+
+export const acceptRide = async(
+  rideId: string,
+  driverId: string,
+  proposedPrice?: number
+): Promise<{ride: any; bid: any}> =>{
+  const ride = await prisma.ride.findUnique({where: {id: rideId}})
+  if(!ride){
+    throw new Error("Ride not Found")
+  }
+
+  if(ride.status !== RideStatus.pending){
+    throw new Error("Ride is no longer available")
+  }
+  const bid = await prisma.rideBid.create({
+    data: {
+      rideId,
+      driverId,
+      amount: proposedPrice !== undefined ? proposedPrice: 0
+    }
+  })
+
+  return {ride, bid}
+
+}
+export const cancelRideBid = async (
+  rideId: string,
+  driverId: string,
+): Promise<RideBid> =>{
+  const bid = await prisma.rideBid.findFirst({
+    where: {
+      rideId,
+      driverId,
+      status: BidStatus.pending
+    }
+  })
+
+  if(!bid){
+      throw new Error("No pending bid found for this ride and driver")
+  }
+
+  const updatedBid = await prisma.rideBid.update({
+    where:{id: rideId},
+    data:{
+      status: BidStatus.rejected
+    }
+  })
+
+  return updatedBid
+  
+}
+
+export const notifyArrival = async (
+  rideId: string,
+  driverId: string
+): Promise<{ message: string}> =>{
+  const ride = await prisma.ride.findUnique({where: {id: rideId}})
+  if(!ride){
+    throw new Error("Ride not found")
+  }
+
+  return { message: 'Driver arrival notified successfully' };
+
+  
+}
+
+export const startRide = async(
+  rideId: string,
+  driverId: string
+): Promise<Ride> =>{
+  const ride = await prisma.ride.findUnique({
+    where: {id: rideId},
+  
+  })
+  if(!ride){
+    throw new Error("Ride not found")
+  }
+  if(ride.status !== RideStatus.pending){
+    throw new Error("Ride is not in Pending state")
+  }
+
+  if(ride.driverId !== driverId){
+    throw new Error("Driver is not authorized to start this ride")
+  }
+
+  const updatedRide = await prisma.ride.update({
+    where:{id: rideId},
+    data: {
+      status: RideStatus.ongoing
+    }
+  })
+
+  return updatedRide
+}
+
+

@@ -1,5 +1,5 @@
-import { body, validationResult } from 'express-validator';
-import { Request, Response, NextFunction } from 'express';
+import { body, validationResult, query, param } from 'express-validator';
+import { Request, Response, NextFunction,  } from 'express';
 
 
 const allowedVerificationTypes = ['NIN', 'Passport', 'IdCard'];
@@ -68,3 +68,92 @@ export const validateUpdateDriverDocuments = [
     next();
   }
 ];
+
+export const validateAvailableRides = [
+    query('driverLatitude')
+      .exists().withMessage('driverLatitude is required')
+      .isFloat({ min: -90, max: 90 }).withMessage('driverLatitude must be a valid latitude'),
+    query('driverLongitude')
+      .exists().withMessage('driverLongitude is required')
+      .isFloat({ min: -180, max: 180 }).withMessage('driverLongitude must be a valid longitude'),
+    query('maxDistance')
+      .optional()
+      .isNumeric().withMessage('maxDistance must be a number'),
+    (req: Request, res: Response, next: NextFunction) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+      next();
+    },
+  ];
+  
+  
+  export const validateRideIdParam = [
+    param('rideId')
+      .exists().withMessage('rideId is required')
+      .isUUID().withMessage('rideId must be a valid UUID'),
+    (req: Request, res: Response, next: NextFunction) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+      next();
+    },
+  ];
+  export const validateAcceptRide = [
+    param('rideId')
+      .exists().withMessage('rideId is required')
+      .isUUID().withMessage('rideId must be a valid UUID'),
+    body('driverId')
+      .exists().withMessage('driverId is required')
+      .isUUID().withMessage('driverId must be a valid UUID'),
+    body('proposedPrice')
+      .optional()
+      .isNumeric().withMessage('proposedPrice must be a number'),
+    (req: Request, res: Response, next: NextFunction) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+      next();
+    },
+  ];
+  export const validateCancelBid = [
+    param('rideId')
+      .exists().withMessage('rideId is required')
+      .isUUID().withMessage('rideId must be a valid UUID'),
+    body('driverId')
+      .exists().withMessage('driverId is required')
+      .isUUID().withMessage('driverId must be a valid UUID'),
+    (req: Request, res: Response, next: NextFunction) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+      next();
+    },
+  ];
+
+  export const validateNotifyArrival = [
+    param('rideId')
+      .exists().withMessage('rideId is required')
+      .isUUID().withMessage('rideId must be a valid UUID'),
+    body('driverId')
+      .exists().withMessage('driverId is required')
+      .isUUID().withMessage('driverId must be a valid UUID'),
+    (req: Request, res: Response, next: NextFunction) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+      next();
+    },
+  ];
+
+
+  export const validateStartRide = [
+    param('rideId')
+      .exists().withMessage('rideId is required')
+      .isUUID().withMessage('rideId must be a valid UUID'),
+    body('driverId')
+      .exists().withMessage('driverId is required')
+      .isUUID().withMessage('driverId must be a valid UUID'),
+    (req: Request, res: Response, next: NextFunction) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      next();
+    },
+  ];
