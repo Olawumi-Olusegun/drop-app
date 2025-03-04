@@ -13,13 +13,15 @@ export const getDriversController = async (req: Request, res: Response) => {
 
     // Validate riderId
     if (!riderId) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Rider ID is required." });
+      res.status(Statuscode.BAD_REQUEST).json({ message: "Rider ID is required." });
+      return
     }
 
     // Fetch available drivers
     const drivers = await getAvailableDrivers(riderId, maxDistance, unit);
 
-    return res.status(Statuscode.SUCCESS).json({ message: "Drivers", drivers });
+    res.status(Statuscode.SUCCESS).json({ message: "Drivers", drivers });
+    return
   } catch (error) {
     console.error("Error in getDriversController:", error);
     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
@@ -63,7 +65,7 @@ export const getAllRidesWithinADriverLocation = async (req: Request, res: Respon
   }
 }
 
-export const createBid = async (req: Request, res: Response) => {
+export const placeBid = async (req: Request, res: Response) => {
 
   try {
 
@@ -98,13 +100,14 @@ export const createBid = async (req: Request, res: Response) => {
       data: {
         rideId,
         driverId,
-        amount,
+        amount: parseFloat(amount),
       },
     });
 
     return res.status(Statuscode.CREATED).json({ data: { bid } });
 
   } catch (error) {
+    console.log("DRIVER PLACE BID", error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
   }
 };

@@ -4,13 +4,24 @@ import { Statuscode } from "../utils/Statuscode";
 import { expirationTime } from "../utils/timeExpiry";
 import { AuthRequest } from "../types";
 import haversineDistance from "haversine-distance";
+import { Prisma } from "@prisma/client";
 
 
 export const requestRide = async (req: Request, res: Response) => {
 
-  const userId = (req as AuthRequest).user?.userId!;
+  const userId = (req as AuthRequest).user?.userId as string;
 
-    const {  rider, pickupLocation, pickupLongitude, pickupLatitude, dropoffLocation, dropoffLatitude, dropoffLongitude, userTimezone, price } = req.body;
+    const {  
+      rider, 
+      pickupLocation, 
+      pickupLongitude, 
+      pickupLatitude, 
+      dropoffLocation, 
+      dropoffLatitude, 
+      dropoffLongitude, 
+      userTimezone, 
+      price 
+    } = req.body;
 
     try {
   
@@ -19,7 +30,7 @@ export const requestRide = async (req: Request, res: Response) => {
         where: { id: rider }
       });
   
-      if (!user || userId !== user.id) {
+      if (!user || !userId || userId !== user.id) {
         res.status(404).json({ message: "User not found" });
         return 
       }
@@ -41,7 +52,7 @@ export const requestRide = async (req: Request, res: Response) => {
             dropoffLatitude,
             dropoffLongitude,
             userTimezone,
-            // price,
+            price: price.toString(),
             expiresAt: expirationTime(15) //The ride expires after 15 minutes
         } });
   
@@ -60,14 +71,10 @@ export const requestRide = async (req: Request, res: Response) => {
       return 
     }
   };
-
-  
-
-
+ 
 export const cancelRide = async (req: Request, res: Response) => {
 
     try {
-
       const { userId, rideId, reason } = req.body;
   
       // Check if ride exists
@@ -76,13 +83,14 @@ export const cancelRide = async (req: Request, res: Response) => {
       if (!ride) {
         return res.status(Statuscode.NOT_FOUND).json({ message: "Ride not found" });
       }
-  
+
       // Create cancellation record
-      const rideCancel = await prisma.rideCancel.create({
-        data: { userId, rideId, reason },
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+       const rideCancel = await tx.rideCancel.create({ data: { userId, rideId, reason }, });
+       await tx.ride.update({ where: { id: rideId }, data: { status: "canceled" } });
+       return rideCancel;
       });
-  
-      return res.status(Statuscode.CREATED).json({ data: { rideCancel } });
+      return res.status(Statuscode.CREATED).json({ success: true, message: "Ride canceled" });
     } catch (error) {
       console.error(error);
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
@@ -121,29 +129,38 @@ export const getRideBids = async (req: Request, res: Response) => {
       console.error(error);
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
-  };
-  
+};
 
-  export const acceptBid = async (req: Request, res: Response) => {
+  // Rider accepts a bid
+export const acceptBid = async (req: Request, res: Response) => {
+  try {
 
-    const { bidId } = req.body;
+    const { rideId, bidId } = req.body;
 
-    try {
-      // Update the bid status to "accepted"
-      const bid = await prisma.rideBid.update({
-        where: { id: bidId },
-        data: { status: "accepted" },
-      });
-  
-      return res.status(Statuscode.SUCCESS).json({ message: "Bid accepted", data: { bid } });
-    } catch (error) {
-      console.error(error);
-      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+    const bid = await prisma.rideBid.findUnique({ where: { id: bidId } });
+
+    if (!bid) {
+      return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Bid not found" });
     }
-  };
+
+    await prisma.ride.update({
+      where: { id: rideId },
+      data: { driverId: bid.driverId, price: bid.amount.toString(), status: "accepted" },
+    });
+
+    await prisma.rideBid.updateMany({
+      where: { rideId, id: { not: bidId } },
+      data: { status: "rejected" },
+    });
+
+    return res.status(Statuscode.SUCCESS).json({ success: true, message: "Bid accepted" });
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, message: error });
+  }
+};
   
 
-  export const rejectBid = async (req: Request, res: Response) => {
+export const rejectBid = async (req: Request, res: Response) => {
     
     const { bidId } = req.body;
 
@@ -155,21 +172,21 @@ export const getRideBids = async (req: Request, res: Response) => {
         data: { status: "rejected" },
       });
   
-      return res.status(200).json({ message: "Bid rejected", bid });
+      return res.status(Statuscode.SUCCESS).json({ message: "Bid rejected", bid });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Server error" });
+      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
-  };
+};
   
-
-  export const searchAvailableRides = async (req: Request, res: Response) => {
+// Rider gets all available drivers
+export const searchAvailableRides = async (req: Request, res: Response) => {
     try {
 
       const { latitude, longitude } = req.query;
   
       if (!latitude || !longitude) {
-        return res.status(400).json({ error: "Latitude and Longitude are required" });
+        return res.status(400).json({ error: "Can't find your location" });
       }
   
       const userLocation = {
@@ -217,11 +234,85 @@ export const getRideBids = async (req: Request, res: Response) => {
         .filter((ride) => ride.distance.value <= 5); // Filter rides within 5km
   
       return res.json({ 
-        message: "Available drivers", 
+        message: "Available rides", 
         data: { rides: nearbyRides }
       });
     } catch (error) {
       console.error("Error searching for rides:", error);
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error: "Internal server error" });
     }
-  };
+};
+
+
+  // Driver places a bid
+export const placeBid = async (req: Request, res: Response) => {
+
+  try {
+
+    const { rideId, driverId, amount } = req.body;
+
+    const bid = await prisma.rideBid.create({
+      data: { rideId, driverId, amount },
+    });
+
+    return res.status(Statuscode.CREATED).json({ success: true, bid });
+  } catch (error) {
+    console.error("Error unable to bid ride:", error);
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, error: "Internal server error" });
+  }
+};
+
+
+// Get available rides for drivers to bid on
+export const getAvailableRides = async (req: Request, res: Response) => {
+
+  try {
+
+    const rides = await prisma.ride.findMany({
+      where: { status: "pending" },
+      include: { user: true, bids: true },
+    });
+
+    return res.status(Statuscode.CREATED).json({ success: true, rides });
+  } catch (error) {
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, error: "Internal server error" });
+  }
+};
+
+
+// Driver Mark ride as completed
+export const completeRide = async (req: Request, res: Response) => {
+  try {
+
+    const { rideId } = req.params;
+    const driverId = (req as AuthRequest)?.user?.userId;
+
+    // Fetch the ride
+    const ride = await prisma.ride.findUnique({
+      where: { id: rideId },
+    });
+
+    if (!ride) {
+      return res.status(Statuscode.NOT_FOUND).json({ message: "Ride not found" });
+    }
+
+    // Ensure only the assigned driver can complete the ride
+    if (ride.driverId !== driverId) {
+      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized action" });
+    }
+
+    // Update ride status to completed
+    const updatedRide = await prisma.ride.update({
+      where: { id: rideId },
+      data: { status: "completed" },
+    });
+
+    return res.status(Statuscode.SUCCESS).json({
+      message: "Ride marked as completed",
+      ride: updatedRide,
+    });
+  } catch (error) {
+    console.log("Unable to cancel ride", error)
+    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, error: "Internal server error" });
+  }
+};

@@ -45,6 +45,7 @@ model Ride {
   userId           String
   driverId         String?
   status           RideStatus   @default(pending)
+  price            String       @default("5000")
   pickupLocation   String
   pickupLatitude   Float
   pickupLongitude  Float
