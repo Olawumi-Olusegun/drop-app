@@ -167,6 +167,7 @@ export const signupWithEmail = async (req: Request, res: Response) => {
     await sendEmail(newUser?.email, "Your OTP Code", emailOTP);
     return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your email." });
   } catch (error) {
+    console.log("SIGNUP EMAIL", error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
   }
 };
