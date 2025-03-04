@@ -35,7 +35,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
   }
 
   try {
-  
+
     const decoded = jwt.verify(token, secret) as VerifyToken;
 
     if (!decoded || !decoded?.userId) {
@@ -53,9 +53,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
         return;
       }
 
-      console.log(authHeader === userExist.accessToken)
-
-      if(authHeader !== userExist.accessToken) {
+      if(token !== userExist.accessToken) {
         res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
         return;
       }
@@ -90,10 +88,11 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 };
 
 
-export const authorizeRole = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Forbidden: You do not have permission" });
+export const authorizeRole = (roles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const userRole = (req as AuthRequest)?.user?.role as UserRole;
+    if (!userRole || !roles.includes(userRole)) {
+      return res.status(403).json({ message: "Forbidden: You do not have permission to access this route" });
     }
     next();
   };
