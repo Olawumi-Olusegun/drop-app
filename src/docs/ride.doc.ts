@@ -1,3 +1,4 @@
+
 /**
  * @swagger
  * /api/v1/request-ride:
@@ -20,6 +21,8 @@
  *               - dropoffLocation
  *               - dropoffLatitude
  *               - dropoffLongitude
+ *               - userTimezone
+ *               - price
  *             properties:
  *               userId:
  *                 type: string
@@ -53,6 +56,14 @@
  *                 format: float
  *                 example: 1.976
  *                 description: The longitude of the dropoff location.
+ *               userTimezone:
+ *                 type: string
+ *                 example: "Africa/Lagos"
+ *                 description: User timezone
+ *               price:
+ *                 type: string
+ *                 example: "5000"
+ *                 description: Rider budget for ride
  *     responses:
  *       200:
  *         description: Ride request created successfully.
@@ -269,7 +280,7 @@
  * @swagger
  * /api/v1/{rideId}/bid:
  *   post:
- *     summary: Place a bid on a ride
+ *     summary: Driver places a bid on a ride
  *     description: Allows a driver to place a bid for a specific ride request.
  *     tags:
  *       - Rider
@@ -290,6 +301,10 @@
  *               - driverId
  *               - amount
  *             properties:
+ *               rideId:
+ *                 type: string
+ *                 example: "6b5eb1b2-b20c-4ar-85e0-84896eyf9aer"
+ *                 description: The ID of the ride.
  *               driverId:
  *                 type: string
  *                 example: "4d5eb1b2-b36c-4ffd-94e0-d4896bef9aec"
