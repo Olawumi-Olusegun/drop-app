@@ -1,56 +1,86 @@
-import express from "express";
+import express from 'express';
+import { OAuth2Client } from "google-auth-library";
+import { Statuscode } from '../utils/Statuscode';
+import { generateToken } from '../utils/jwt';
 import dotenv from "dotenv";
-import passport from "../middlewares/passport.middleware";
-import { Statuscode } from "../utils/Statuscode";
-import { generateToken } from "../utils/jwt";
-import { UserRole } from "../types";
 import prisma from "../config/db";
+
 dotenv.config();
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID as string || "");
 
 const router = express.Router();
 
-// Google OAuth Redirect
-router.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+router.post("/google-auth", async (req, res) => {
 
-// Google OAuth Callback
-router.get("/auth/google/callback",
-  passport.authenticate("google", { session: false }),
-  async (req, res) => {
+    const { googleToken, role } = req.body;
 
-    const user = req.user as any;
-
-    const userExist = await prisma.user.findFirst({
-      where: { googleId: user?.googleId },
-    });
-
-    if (!userExist || !userExist.googleId) {
-        return res.status(Statuscode.NOT_FOUND).json({ message: "Authentication failed: User not found" });
+    if (!googleToken || !role) {
+        return res.status(Statuscode.FORBIDDEN).json({ message: "Invalid token" });
     }
 
-    // Generate JWT AccessToken and RefreshToken
-    const accessToken = generateToken({ userId: user?.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
-    const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: googleToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
 
-    const updatedUser =  await prisma.user.update({
-        where: { id: userExist.id },
-        data: { refreshToken },
-      });
+        if(!ticket) {
+            return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid google ID" });
+        }
 
-    if(!updatedUser) {
-      return res.status(Statuscode.NOT_FOUND).json({ message: "Authentication failed: Could not get user record" });
+        const payload = ticket.getPayload();
+        const googleId = payload?.sub;
+
+        if(!payload || !googleId) {
+            return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid google ID!" });
+        }
+
+        let user = await prisma.user.findUnique({
+            where: { googleId },
+        });
+
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    googleId,
+                    email: payload?.email || "",
+                    fullName: payload?.name || "",
+                    profileImage: payload?.picture || "",
+                    onlineStatus: "offline",
+                    role: role || "rider",
+                    modeOfRegistration: "googleId",
+                    isUserVerified: true,
+                    isEmailVerified: true,
+                },
+            });
+        }
+
+        if (user && user.isBlocked) {
+            return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Your account has been blocked" });
+        }
+
+        if (user && user.modeOfRegistration !== "googleId") {
+            return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
+        }
+
+        const accessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role });
+        const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role, expiresIn: "30d" });
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { refreshToken },
+        });
+
+        const { password: appPassword, ...userWithoutPassword } = user;
+
+        return res.status(Statuscode.SUCCESS).json({
+            message: "Sign-in successful",
+            data: { ...userWithoutPassword, accessToken }
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Authentication failed" });
     }
-
-    const { password: appPassword, ...userWithoutPassword } = updatedUser;
-
-   // Send token to frontend (redirect or JSON response)
-   return res.status(Statuscode.SUCCESS).json({
-    message: "Sign-in successful",
-    data: { user: {...userWithoutPassword, accessToken, }
-   }});
-
-    // res.redirect(`http://localhost:5051/auth?accessToken=${accessToken}`);
-
-  }
-);
-
-export default router;
+});
