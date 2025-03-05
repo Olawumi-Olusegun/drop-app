@@ -31,6 +31,8 @@ model User {
   accessToken           String?
   profileImage          String?
   isUserVerified        Boolean            @default(false)
+  averageRating         Float              @default(0.0)
+  totalCompletedRides   Int                @default(0)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   otp                   OTP?
@@ -39,6 +41,8 @@ model User {
   ridesAsDriver         Ride[]             @relation(name: "DriverRides")
   rideBids              RideBid[]
   rideCancellations     RideCancel[]
+
+  userRatings UserRating[] @relation("UserRatings")
 }
 
 model Ride {
@@ -54,6 +58,7 @@ model Ride {
   dropoffLocation  String
   dropoffLatitude  Float
   dropoffLongitude Float
+  finalFare        Float?       @default(0.0)
   userTimezone     String
   expiresAt        DateTime?
   createdAt        DateTime     @default(now())
@@ -176,6 +181,17 @@ model DriverVehicle {
   roadWorthiness      String?
 
   driver Driver @relation(fields: [driverId], references: [id])
+}
+
+model UserRating {
+  id        String   @id @default(uuid())
+  userId    String
+  driverId  String
+  rating    Float
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user User @relation("UserRatings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum RideStatus {
