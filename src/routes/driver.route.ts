@@ -1,25 +1,58 @@
 import express from "express";
-import { acceptRideController, cancelRideBidController, DocumentUploadController, getAvailableRidesController, getDriversController, getRideDetailsController, registerDriverController, startRideController } from "../controllers/driver.controller";
+import {
+    acceptRideController,
+    cancelRideBidController,
+    completeRideController,
+    DocumentUploadController,
+    getAvailableRidesController,
+    getDriverDashboardController,
+    getDriverRideHistoryController,
+    getDriversController,
+    getRideDetailsController,
+    getUserDetailsController,
+    rateUserController,
+    registerDriverController,
+    startRideController,
+} from "../controllers/driver.controller";
 import { updateDriverDocuments } from "../services/driver.service";
-import { validateAcceptRide, validateAvailableRides, validateCancelBid, validateDriverRegistration, validateRideIdParam, validateStartRide, validateUpdateDriverDocuments } from "../validators/driverValidator";
+import {
+    validateAcceptRide,
+    validateAvailableRides,
+    validateCancelBid,
+    validateCompleteRide,
+    validateDriverDashboard,
+    validateDriverRegistration,
+    validateDriverRideHistory,
+    validateGetUserDetails,
+    validateRateUser,
+    validateRideIdParam,
+    validateStartRide,
+    validateUpdateDriverDocuments,
+} from "../validators/driverValidator";
 
 const router = express.Router();
 
 router.get("/available-drivers/:riderId", getDriversController);
 
-router.post('/register',validateDriverRegistration , registerDriverController)
+router.post("/register", validateDriverRegistration, registerDriverController);
 
-router.post('/upload-documents', validateUpdateDriverDocuments ,  DocumentUploadController)
+router.post(
+    "/upload-documents",
+    validateUpdateDriverDocuments,
+    DocumentUploadController
+);
+router.get("/dashboard", validateDriverDashboard, getDriverDashboardController);
 
+router.get("/available", validateAvailableRides, getAvailableRidesController);
 
-router.get('/available', validateAvailableRides, getAvailableRidesController)
+router.get("/:rideId", validateRideIdParam, getRideDetailsController);
+router.get("/:userId", validateGetUserDetails, getUserDetailsController);
 
-router.get('/:rideId', validateRideIdParam, getRideDetailsController)
+router.post("/:rideId/accept", validateAcceptRide, acceptRideController);
 
-router.post('/:rideId/accept', validateAcceptRide, acceptRideController)
-
-
-router.post('/:rideId/cancel', validateCancelBid, cancelRideBidController);
-router.post("/:rideId/start", validateStartRide, startRideController)
-
+router.post("/:rideId/cancel", validateCancelBid, cancelRideBidController);
+router.post("/:rideId/start", validateStartRide, startRideController);
+router.post("/:rideId/complete", validateCompleteRide, completeRideController);
+router.post("/:userId/rate", validateRateUser, rateUserController);
+router.get("/rides", validateDriverRideHistory, getDriverRideHistoryController);
 export default router;

@@ -68,7 +68,7 @@
  *     summary: Register a new driver
  *     description: Creates a new driver record with core details and returns pre-signed URLs for document uploads.
  *     tags:
- *       - Drivers
+ *       - Driver
  *     requestBody:
  *       required: true
  *       content:
@@ -242,7 +242,7 @@
  *     summary: Update driver document uploads
  *     description: Notifies the server that document uploads are complete. Updates the driver's identification and vehicle records with the provided S3 URLs.
  *     tags:
- *       - Drivers
+ *       - Driver
  *     requestBody:
  *       required: true
  *       content:
@@ -297,6 +297,52 @@
  *       500:
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /api/v1/drivers/dashboard:
+ *   get:
+ *     summary: Get driver dashboard metrics
+ *     description: Retrieves the driver's total earnings and total completed rides for a specified day. If no date is provided, today's metrics are returned.
+ *     tags:
+ *       - Driver
+ *     parameters:
+ *       - in: query
+ *         name: driverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the driver.
+ *       - in: query
+ *         name: date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: The target date in ISO8601 format (e.g., "2023-08-15"). Defaults to today if not provided.
+ *     responses:
+ *       200:
+ *         description: Driver dashboard metrics retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 dashboard:
+ *                   type: object
+ *                   properties:
+ *                     totalEarnings:
+ *                       type: number
+ *                       example: 1200
+ *                     totalRides:
+ *                       type: number
+ *                       example: 8
+ *       404:
+ *         description: Driver not Found
+ *       500:
+ *         description: Internal server error.
+ */
 /**
  * @swagger
  * /api/v1/drivers/available:
@@ -304,7 +350,7 @@
  *     summary: Get available rides for drivers
  *     description: Retrieves a list of rides with status "pending" that are within the specified maxDistance (in km) from the driver's current location.
  *     tags:
- *       - Rides
+ *       - Driver
  *     parameters:
  *       - in: query
  *         name: driverLatitude
@@ -377,7 +423,7 @@
  *     summary: Get details of a specific ride
  *     description: Retrieves detailed information about a ride by its unique identifier.
  *     tags:
- *       - Rides
+ *       - Driver
  *     parameters:
  *       - in: path
  *         name: rideId
@@ -428,6 +474,37 @@
  *       500:
  *         description: Internal server error.
  */
+/**
+ * @swagger
+ * /api/v1/drivers/{userId}:
+ *   get:
+ *     summary: Get user details
+ *     description: Retrieves the user's details including full name, average rating, total completed rides, and years using the app.
+ *     tags:
+ *       - Driver
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user.
+ *     responses:
+ *       200:
+ *         description: User details retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid parameters.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ *
+ */
 
 /**
  * @swagger
@@ -436,7 +513,7 @@
  *     summary: Submit a bid to accept a ride
  *     description: Allows a driver to submit a bid (with an optional proposed price) for a ride. The ride remains in the "pending" state so that multiple bids can be submitted.
  *     tags:
- *       - Rides
+ *       - Driver
  *     parameters:
  *       - in: path
  *         name: rideId
@@ -488,7 +565,7 @@
  *     summary: Cancel a bid for a ride
  *     description: Allows a driver to cancel their bid for a ride. The bid's status is updated to "rejected".
  *     tags:
- *       - Rides
+ *       - Driver
  *     parameters:
  *       - in: path
  *         name: rideId
@@ -538,7 +615,7 @@
  *     summary: Start a ride
  *     description: Marks the ride as "ongoing" when the driver begins the trip. This endpoint updates the ride status and optionally records the start time.
  *     tags:
- *       - Rides
+ *       - Driver
  *     parameters:
  *       - in: path
  *         name: rideId
@@ -571,6 +648,162 @@
  *         description: Ride cannot be started (e.g., invalid state or unauthorized driver).
  *       404:
  *         description: Ride not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+/**
+ * @swagger
+ * /api/v1/drivers/{rideId}/complete:
+ *   post:
+ *     summary: Complete a ride
+ *     description: Marks the ride as "completed" when the driver has reached the dropoff location. The ride must be "ongoing" and the driver must be the one assigned.
+ *     tags:
+ *       - Driver
+ *     parameters:
+ *       - in: path
+ *         name: rideId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the ride.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               driverId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "driver-uuid"
+ *             required:
+ *               - driverId
+ *     responses:
+ *       200:
+ *         description: Ride ended successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Ride'
+ *       400:
+ *         description: Ride is not in progress or driver is not authorized.
+ *       404:
+ *         description: Ride not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+
+
+/**
+
+ * @swagger
+ * /api/v1/drivers/{userId}/rate:
+ *   post:
+ *     summary: Rate a user
+ *     description: Allows a driver to rate a user by creating a new rating record.
+ *     tags:
+ *       - Driver
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               driverId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "driver-uuid"
+ *               rating:
+ *                 type: number
+ *                 example: 4.5
+ *               comment:
+ *                 type: string
+ *                 example: "Great user, prompt payment."
+ *             required:
+ *               - driverId
+ *               - rating
+ *     responses:
+ *       200:
+ *         description: User rated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserRating'
+ *       400:
+ *         description: Invalid input.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ *
+ */
+
+/**
+ * @swagger
+ * /api/v1/drivers/rides:
+ *   get:
+ *     summary: Get driver ride history with pagination
+ *     description: Retrieves a list of rides that the driver has been assigned to (ride history), ordered from most recent. Pagination parameters (page and limit) are optional.
+ *     tags:
+ *       - Driver
+ *     parameters:
+ *       - in: query
+ *         name: driverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the driver.
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: The page number.
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: The number of rides per page.
+ *     responses:
+ *       200:
+ *         description: Driver ride history retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 rides:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Ride'
+ *                 totalCount:
+ *                   type: number
+ *                   example: 50
+ *                 page:
+ *                   type: number
+ *                   example: 1
+ *                 limit:
+ *                   type: number
+ *                   example: 10
+ *       400:
+ *         description: Invalid parameters.
  *       500:
  *         description: Internal server error.
  */
