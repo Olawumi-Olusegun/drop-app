@@ -29,10 +29,10 @@ const app: Application = express();
 
 app.disable('x-powered-by');
 app.use(express.json());
-app.use(session({ 
-  secret: process.env.EXPRESS_SESSION_SECRET!, 
-  resave: false, 
-  saveUninitialized: true 
+app.use(session({
+  secret: process.env.EXPRESS_SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: true
 }));
 
 app.use(passport.initialize())
@@ -40,11 +40,11 @@ app.use(passport.session())
 
 app.use(morgan("dev"));
 app.use(
-    cors({
-        origin: ['http://localhost:3000', 'http://localhost:5173','https://drop-app-ytc9.onrender.com',],
-        optionsSuccessStatus: 200,
-        credentials: true,
-    })
+  cors({
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',],
+    optionsSuccessStatus: 200,
+    credentials: true,
+  })
 );
 
 
@@ -69,16 +69,16 @@ app.use(notFoundHandler);
 
 // Global Error Handler (For other errors)
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const statusCode = err.status || Statuscode.INTERNAL_SERVER_ERROR;
-    res.status(statusCode).json({
-      message: err.message || "Server Error",
-      statusCode,
-    });
+  const statusCode = err.status || Statuscode.INTERNAL_SERVER_ERROR;
+  res.status(statusCode).json({
+    message: err.message || "Server Error",
+    statusCode,
   });
-  
+});
+
 
 const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 
 process.on("SIGTERM", async () => {
