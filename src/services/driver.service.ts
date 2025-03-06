@@ -100,11 +100,13 @@ const haversineDistance = (
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
-
 export const registerDriver = async (data: DriverRegistrationInput) => {
+  // Ensure dateOfBirth is in full ISO format.
   const dateOfBirthISO = data.dateOfBirth.includes("T")
     ? data.dateOfBirth
     : data.dateOfBirth + "T00:00:00Z";
+
+  // Ensure the user exists.
   const userExists = await prisma.user.findUnique({
     where: { id: data.userId },
   });
@@ -112,67 +114,78 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
     throw new Error("User does not exist");
   }
 
+  // Check if a driver already exists for this user.
   const existingDriver = await prisma.driver.findUnique({
     where: { userId: data.userId },
   });
   if (existingDriver) {
     throw new Error("Driver already exists");
   }
-  const driver = await prisma.driver.create({
-    data: {
-      userId: data.userId,
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      nationality: data.nationality,
-      dateOfBirth: new Date(dateOfBirthISO),
-      fullAddress: data.address,
-      city: data.city,
-      postalCode: data.postalCode,
-      country: data.country,
-      totalCompletedRides: 0,
-      registrationStatus: RegistrationStatus.pending,
-      registrationDate: new Date(),
-    },
-  });
-  await prisma.driverIdentification.create({
-    data: {
-      driverId: driver.id,
-      issuingCountry: data.issuingCountry,
-      documentType: data.verificationType,
-      nin: data.nin,
-      licenseNumber: data.licenseNumber,
-      licenseExpiryDate: data.licenseExpiryDate,
-      passportPhotoUrl: "",
-      idCardBackUrl: "",
-      idCardFrontUrl: "",
-      licensePhotoUrl: "",
-      selfieWithLicenseUrl: "",
-    },
+
+
+  const driver = await prisma.$transaction(async (tx) => {
+
+    const createdDriver = await tx.driver.create({
+      data: {
+        userId: data.userId,
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        nationality: data.nationality,
+        dateOfBirth: new Date(dateOfBirthISO),
+        fullAddress: data.address,
+        city: data.city,
+        postalCode: data.postalCode,
+        country: data.country,
+        totalCompletedRides: 0,
+        registrationStatus: RegistrationStatus.pending,
+        registrationDate: new Date(),
+      },
+    });
+
+
+    await tx.driverIdentification.create({
+      data: {
+        driverId: createdDriver.id,
+        issuingCountry: data.issuingCountry,
+        documentType: data.verificationType,
+        nin: data.nin,
+        passportPhotoUrl: "",
+        idCardFrontUrl: "",
+        idCardBackUrl: "",
+        licenseNumber: data.licenseNumber,
+        licenseExpiryDate: data.licenseExpiryDate,
+        licensePhotoUrl: "",
+        selfieWithLicenseUrl: "",
+      },
+    });
+
+
+    await tx.driverVehicle.create({
+      data: {
+        driverId: createdDriver.id,
+        carBrand: data.carBrand,
+        carModel: data.carModel,
+        licensePlateNumber: data.licensePlateNumber,
+        carColor: data.carColour,
+        carPictureUrl: "",
+        vehicleRegistration: "",
+        roadWorthiness: "",
+      },
+    });
+
+    return createdDriver;
   });
 
-  await prisma.driverVehicle.create({
-    data: {
-      driverId: driver.id,
-      carBrand: data.carBrand,
-      carModel: data.carModel,
-      licensePlateNumber: data.licensePlateNumber,
-      carColor: data.carColour,
-      carPictureUrl: "",
-      vehicleRegistration: "",
-      roadWorthiness: "",
-    },
-  });
 
   const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
-  const idCardFrontKey = `drivers/${driver.id}/licensePhoto.jpg`;
+  const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
   const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
-
   const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
   const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
   const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
-  const vehicleRegistration = `drivers/${driver.id}/vehicleRegistration.jpg`;
-  const roadWorthiness = `drivers/${driver.id}/roadWorthiness.jpg`;
+  const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
+  const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
 
   const [
     passPortPhotoUrl,
@@ -190,9 +203,10 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
     generatePresignedUrl(licensePhotoKey),
     generatePresignedUrl(selfieWithLicenseKey),
     generatePresignedUrl(carPictureKey),
-    generatePresignedUrl(vehicleRegistration),
-    generatePresignedUrl(roadWorthiness),
+    generatePresignedUrl(vehicleRegistrationKey),
+    generatePresignedUrl(roadWorthinessKey),
   ]);
+
   const preSignedUrls = {
     passPortPhotoUrl,
     idCardFrontUrl,
@@ -379,7 +393,7 @@ export const cancelRideBid = async (
   }
 
   const updatedBid = await prisma.rideBid.update({
-    where: { id: rideId },
+    where: { id: bid.id },
     data: {
       status: BidStatus.rejected,
     },
@@ -410,8 +424,8 @@ export const startRide = async (
   if (!ride) {
     throw new Error("Ride not found");
   }
-  if (ride.status !== RideStatus.pending) {
-    throw new Error("Ride is not in Pending state");
+  if (ride.status !== RideStatus.accepted) {
+    throw new Error("Ride cannot be started");
   }
 
   if (ride.driverId !== driverId) {

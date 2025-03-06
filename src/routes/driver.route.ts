@@ -45,8 +45,8 @@ router.get("/dashboard", validateDriverDashboard, getDriverDashboardController);
 
 router.get("/available", validateAvailableRides, getAvailableRidesController);
 
-router.get("/:rideId", validateRideIdParam, getRideDetailsController);
-router.get("/:userId", validateGetUserDetails, getUserDetailsController);
+router.get("/ride/:rideId", validateRideIdParam, getRideDetailsController);
+router.get("/user/:userId", validateGetUserDetails, getUserDetailsController);
 
 router.post("/:rideId/accept", validateAcceptRide, acceptRideController);
 

@@ -418,7 +418,7 @@
  */
 /**
  * @swagger
- * /api/v1/drivers/{rideId}:
+ * /api/v1/drivers/ride/{rideId}:
  *   get:
  *     summary: Get details of a specific ride
  *     description: Retrieves detailed information about a ride by its unique identifier.
@@ -476,7 +476,7 @@
  */
 /**
  * @swagger
- * /api/v1/drivers/{userId}:
+ * /api/v1/drivers/user/{userId}:
  *   get:
  *     summary: Get user details
  *     description: Retrieves the user's details including full name, average rating, total completed rides, and years using the app.
@@ -679,6 +679,9 @@
  *                 type: string
  *                 format: uuid
  *                 example: "driver-uuid"
+ *               finalFare:
+ *                  type: number
+ *                  example: 500
  *             required:
  *               - driverId
  *     responses:

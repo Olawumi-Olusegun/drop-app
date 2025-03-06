@@ -129,6 +129,7 @@ model Driver {
   postalCode          String
   country             String
   totalCompletedRides Int                @default(0)
+  averageRating       Float              @default(0.0)
   registrationStatus  RegistrationStatus
   registrationDate    DateTime           @default(now())
   approvalDate        DateTime?
@@ -174,7 +175,7 @@ model DriverVehicle {
   driverId            String  @unique
   carBrand            String
   carModel            String
-  licensePlateNumber  String  @unique
+  licensePlateNumber  String
   carColor            String
   carPictureUrl       String?
   vehicleRegistration String

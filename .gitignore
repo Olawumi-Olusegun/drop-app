@@ -5,3 +5,4 @@ build/
 
 migrations/
 seed.ts
+.vscode

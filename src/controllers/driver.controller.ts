@@ -81,6 +81,8 @@ export const registerDriverController = async (req: Request, res: Response) => {
     if (error.message === "Driver already exists") {
       return res.status(400).json({ error: error.message });
     }
+
+    console.log(error.message)
     res.status(500).json({ message: "Internal Server error" });
   }
 };
@@ -173,6 +175,7 @@ export const acceptRideController = async (req: Request, res: Response) => {
     if (error.message === "Ride is no longer available") {
       return res.status(400).json({ error: error.message });
     }
+    console.log(error.message)
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -188,8 +191,11 @@ export const cancelRideBidController = async (req: Request, res: Response) => {
       .json({ message: "Bid cancelled successfully", bid: updatedBid });
   } catch (error: any) {
     if (error.message == "No pending bid found for this ride and driver") {
-      return res.status(404).json({ error: "Internal server Error" });
+      return res.status(404).json({ error: error.message });
     }
+    console.log(error.message)
+    res.status(500).json({ error: "Internal server error" })
+
   }
 };
 
@@ -220,7 +226,7 @@ export const startRideController = async (req: Request, res: Response) => {
       return res.status(404).json({ error: error.message });
     }
     if (
-      error.message === "Ride is not in Pending state" ||
+      error.message === "Ride cannot be started" ||
       error.message === "Driver is not authorized to start this ride"
     ) {
       return res.status(400).json({ error: error.message });
@@ -234,7 +240,7 @@ export const completeRideController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
     const { driverId } = req.body;
-    const finalFare = req.body as string
+    const finalFare = req.body.finalFare as string
     const updatedRide = await completeRide(rideId, driverId, finalFare);
     res.status(200).json(updatedRide);
   } catch (error: any) {
@@ -242,7 +248,7 @@ export const completeRideController = async (req: Request, res: Response) => {
       return res.status(404).json({ error: error.message });
     }
     if (
-      error.message === "RIde is not in progress" ||
+      error.message === "Ride is not in progress" ||
       error.message === "Driver is not authorized to end this ride"
     ) {
       return res.status(400).json({ error: error.message });
@@ -273,6 +279,7 @@ export const getDriverRideHistoryController = async (req: Request, res: Response
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10
 
     const { rides, totalCount } = await getDriverRideHistory(driverId, page, limit)
+    res.status(200).json({ rides, totalCount, page, limit })
   }
   catch (error) {
     res.status(500).json({ error: "Internal Server Error" })
