@@ -495,8 +495,7 @@
  *         description: User details retrieved successfully.
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
+ *             
  *       400:
  *         description: Invalid parameters.
  *       404:
@@ -546,10 +545,6 @@
  *             schema:
  *               type: object
  *               properties:
- *                 ride:
- *                   $ref: '#/components/schemas/Ride'
- *                 bid:
- *                   $ref: '#/components/schemas/RideBid'
  *       400:
  *         description: Ride is no longer available or invalid input.
  *       404:
@@ -598,8 +593,7 @@
  *                 message:
  *                   type: string
  *                   example: "Bid cancelled successfully"
- *                 bid:
- *                   $ref: '#/components/schemas/RideBid'
+ *               
  *       400:
  *         description: Invalid input.
  *       404:
@@ -642,8 +636,7 @@
  *         description: Ride started successfully.
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Ride'
+ *            
  *       400:
  *         description: Ride cannot be started (e.g., invalid state or unauthorized driver).
  *       404:
@@ -689,8 +682,7 @@
  *         description: Ride ended successfully.
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Ride'
+ *             
  *       400:
  *         description: Ride is not in progress or driver is not authorized.
  *       404:
@@ -743,8 +735,6 @@
  *         description: User rated successfully.
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UserRating'
  *       400:
  *         description: Invalid input.
  *       404:
