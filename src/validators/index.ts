@@ -81,6 +81,9 @@ export const validateResetPassword = [
     }),
 ];
 
+
+
+
 export const validateUserLocation = [
   body('phoneNumber').optional().isMobilePhone('any').withMessage('Invalid phone number'),
   body("email").optional().isEmail().withMessage("Invalid email format"),
