@@ -138,6 +138,7 @@ model Driver {
   user            User                   @relation(fields: [userId], references: [id])
   identifications DriverIdentification[]
   vehicles        DriverVehicle[]
+  DriverWallet    DriverWallet[]
 }
 
 enum RegistrationStatus {
@@ -180,6 +181,16 @@ model DriverVehicle {
   carPictureUrl       String?
   vehicleRegistration String
   roadWorthiness      String?
+
+  driver Driver @relation(fields: [driverId], references: [id])
+}
+
+model DriverWallet {
+  id        String   @id @default(uuid())
+  driverId  String   @unique
+  balance   Float    @default(0.0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   driver Driver @relation(fields: [driverId], references: [id])
 }

@@ -8,6 +8,7 @@ import {
     getDriverDashboardController,
     getDriverRideHistoryController,
     getDriversController,
+    getDriverWalletController,
     getRideDetailsController,
     getUserDetailsController,
     rateUserController,
@@ -23,6 +24,7 @@ import {
     validateDriverDashboard,
     validateDriverRegistration,
     validateDriverRideHistory,
+    validateDriverWallet,
     validateGetUserDetails,
     validateRateUser,
     validateRideIdParam,
@@ -55,4 +57,5 @@ router.post("/:rideId/start", validateStartRide, startRideController);
 router.post("/:rideId/complete", validateCompleteRide, completeRideController);
 router.post("/:userId/rate", validateRateUser, rateUserController);
 router.get("/rides", validateDriverRideHistory, getDriverRideHistoryController);
+router.get('/wallet', validateDriverWallet, getDriverWalletController)
 export default router;
