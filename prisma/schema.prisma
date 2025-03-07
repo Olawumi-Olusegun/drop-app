@@ -31,13 +31,18 @@ model User {
   accessToken           String?
   profileImage          String?
   isUserVerified        Boolean            @default(false)
+  averageRating         Float              @default(0.0)
+  totalCompletedRides   Int                @default(0)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   otp                   OTP?
-  ridesAsDriver         Ride[]             @relation("DriverRides")
-  ridesAsUser           Ride[]             @relation("UserRides")
+  Driver                Driver?
+  ridesAsUser           Ride[]             @relation(name: "UserRides")
+  ridesAsDriver         Ride[]             @relation(name: "DriverRides")
   rideBids              RideBid[]
   rideCancellations     RideCancel[]
+
+  userRatings UserRating[] @relation("UserRatings")
 }
 
 model Ride {
@@ -45,20 +50,21 @@ model Ride {
   userId           String
   driverId         String?
   status           RideStatus   @default(pending)
-  price            String       @default("5000")
+  bids             RideBid[]
+  cancellations    RideCancel[]
   pickupLocation   String
   pickupLatitude   Float
   pickupLongitude  Float
   dropoffLocation  String
   dropoffLatitude  Float
   dropoffLongitude Float
+  finalFare        Float?       @default(0.0)
   userTimezone     String
   expiresAt        DateTime?
   createdAt        DateTime     @default(now())
-  driver           User?        @relation("DriverRides", fields: [driverId], references: [id])
-  user             User         @relation("UserRides", fields: [userId], references: [id], onDelete: Cascade)
-  bids             RideBid[]
-  cancellations    RideCancel[]
+
+  user   User  @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
+  driver User? @relation(name: "DriverRides", fields: [driverId], references: [id])
 }
 
 model RideBid {
@@ -68,8 +74,9 @@ model RideBid {
   amount    Float
   status    BidStatus @default(pending)
   createdAt DateTime  @default(now())
-  driver    User      @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  ride      Ride      @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  ride   Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  driver User @relation(fields: [driverId], references: [id], onDelete: Cascade)
 }
 
 model RideCancel {
@@ -78,8 +85,9 @@ model RideCancel {
   rideId    String
   reason    String
   createdAt DateTime @default(now())
-  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
 }
 
 model OTP {
@@ -87,8 +95,8 @@ model OTP {
   otp       String
   expiresAt DateTime
   userId    String   @unique
-  createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 enum OnlineStatus {
@@ -106,6 +114,85 @@ enum ModeOfRegistration {
   phoneNumber
   email
   googleId
+}
+
+model Driver {
+  id                  String             @id @default(uuid())
+  userId              String             @unique
+  firstName           String
+  middleName          String?
+  lastName            String
+  nationality         String
+  dateOfBirth         DateTime
+  fullAddress         String
+  city                String
+  postalCode          String
+  country             String
+  totalCompletedRides Int                @default(0)
+  averageRating       Float              @default(0.0)
+  registrationStatus  RegistrationStatus
+  registrationDate    DateTime           @default(now())
+  approvalDate        DateTime?
+  approvedBy          String?
+
+  user            User                   @relation(fields: [userId], references: [id])
+  identifications DriverIdentification[]
+  vehicles        DriverVehicle[]
+}
+
+enum RegistrationStatus {
+  pending
+  incomplete
+  approved
+  rejected
+  suspended
+}
+
+model DriverIdentification {
+  id                   String           @id @default(uuid())
+  driverId             String           @unique
+  issuingCountry       String
+  documentType         verificationType
+  nin                  String?
+  passportPhotoUrl     String?
+  idCardFrontUrl       String?
+  idCardBackUrl        String?
+  licenseNumber        String
+  licenseExpiryDate    String
+  licensePhotoUrl      String
+  selfieWithLicenseUrl String
+  driver               Driver           @relation(fields: [driverId], references: [id])
+}
+
+enum verificationType {
+  NIN
+  Passport
+  IdCard
+}
+
+model DriverVehicle {
+  id                  String  @id @default(uuid())
+  driverId            String  @unique
+  carBrand            String
+  carModel            String
+  licensePlateNumber  String
+  carColor            String
+  carPictureUrl       String?
+  vehicleRegistration String
+  roadWorthiness      String?
+
+  driver Driver @relation(fields: [driverId], references: [id])
+}
+
+model UserRating {
+  id        String   @id @default(uuid())
+  userId    String
+  driverId  String
+  rating    Float
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user User @relation("UserRatings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum RideStatus {
