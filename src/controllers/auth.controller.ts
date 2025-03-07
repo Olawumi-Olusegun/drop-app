@@ -17,6 +17,40 @@ import { expirationTime } from "../utils/timeExpiry";
  * @access Pulic
  */
 
+export const testCreateUser = async (req: Request, res: Response) => {
+ 
+  const forms = {
+    fullName: "John Doe++", //Add preferred name here
+    password: "$2a$12$NlMGXt1Qs5zcAvT3to92cu/3FDkOUfSv9gXgmtGLZ9QD7vEsQU/M6", //password123
+    email: "email@mail.com",     // add new email here
+    phoneNumber: "+2348122510760",   //Add phone number here
+    isPhoneNumberVerified: true,
+    isEmailVerified: true,
+    isUserVerified: true,
+}
+
+  try {
+
+    const createdUser = await prisma.user.create({
+      data: {...forms, onlineStatus: "online", role: "rider", modeOfRegistration:"email"},
+    });
+
+    const accessToken = generateToken({ userId: createdUser.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
+    const refreshToken = generateToken({ userId: createdUser.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
+
+    await prisma.user.update({
+     where: { id: createdUser.id },
+     data: { accessToken, refreshToken  }
+    });
+
+    return res.status(201).json({ user: createdUser })
+
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ error: error })
+  }
+}
+
 export const signupWithPhoneNumber = async (req: Request, res: Response) => {
 
   const { phoneNumber, role } = req.body;
@@ -345,8 +379,8 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified yet" });
     }
 
-    if (user && user.modeOfRegistration !== "phoneNumber") {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "You signed up with a different identity" });
+    if (user && !user.phoneNumber) {
+      return res.status(Statuscode.BAD_REQUEST).json({ message: "Phonenumber not found" });
     }
 
     // Generate OTP
@@ -410,9 +444,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
     }
 
-    console.log(authHeader === user?.accessToken)
-
-    if(authHeader !== user?.accessToken) {
+    if(accessToken !== user?.accessToken) {
       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
       return;
     }
@@ -451,17 +483,17 @@ export const createUsername = async (req: Request, res: Response) => {
 
   // `identifier` can be either email or phoneNumber
   const { identifier, fullName } = req.body;
- 
+
   try {
     // Find user by email or phoneNumber
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ email: identifier }, { phoneNumber: identifier }],
+        OR: [{ email: identifier }, { phoneNumber: formatPhoneNumber(identifier) || "123" }],
       },
     });
 
     if (!user) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
     }
 
      await prisma.user.update({
