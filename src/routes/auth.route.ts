@@ -1,6 +1,6 @@
 import express from "express";
 
-import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber, updateUserProfile } from "../controllers/auth.controller";
+import { AddUserPhoneNumber, createPassword, createUsername, refreshToken, signInWithEmail, signInWithPhoneNumber, signupWithEmail, signupWithGoogle, signupWithPhoneNumber, testCreateUser, updateUserProfile } from "../controllers/auth.controller";
 import { validateCreatePassword, validateEmail, validateEmailOTP, validateForgotPassword, validateNewOTP, validatePhoneNumberOTP, validateRequest, validateResetPassword, validateSignin, validateSignup, validateUserLocation } from "../validators";
 import { generateNewOTP, verifyEmailOTP, VerifyPhoneNumberUsingOTP, VerifySignInWithPhoneNumber } from "../controllers/verification.controller";
 import { forgotPassword, resetPassword } from "../controllers/forgot.password.controller";
@@ -10,6 +10,7 @@ import { updateUserLocation } from "../controllers/user.controller";
 const router = express.Router();
 
 // authentication endpoints
+// router.post("/test-create-user", testCreateUser);
 router.post("/signup-with-email", validateSignup, validateRequest, signupWithEmail);
 
 router.post("/signup-with-phone-number", validateSignup, validateRequest, signupWithPhoneNumber);
@@ -51,3 +52,9 @@ router.post("/verify-phone-number", VerifyPhoneNumberUsingOTP);
 router.post("/update-user-location", validateUserLocation, validateRequest, updateUserLocation);
 
 export default router;
+
+
+
+
+
+  
