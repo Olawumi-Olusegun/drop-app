@@ -16,7 +16,7 @@ router.get("/available", validateQueryParams, validateRequest, getAllRidesWithin
 router.get("/available-drivers/:riderId", getDriversController);
 router.get("/available-rides", searchAvailableRides) //Riders;
 router.patch("/:rideId/complete", authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]), completeRide);
-router.get("/:rideId/details", authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]), getRideDetails);
+router.get("/:rideId/details", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.DRIVER, UserRole.ADMIN]), getRideDetails);
 router.post("/:rideId/cancel", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.ADMIN]), cancelRide);
 router.get("/:rideId/bids", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.ADMIN]), getRideBids);
 router.post("/:rideId/bid", authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]), placeBid);
