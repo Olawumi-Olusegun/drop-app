@@ -6,6 +6,7 @@ import {
   getAvailableDrivers,
   getAvailableRides,
   getDriverDashboard,
+  getDriverWallet,
   getRideDetails,
   getUserDetails,
   notifyArrival,
@@ -15,8 +16,6 @@ import {
   updateDriverDocuments,
 } from "../services/driver.service";
 import { Statuscode } from "../utils/Statuscode";
-import { verificationType } from "@prisma/client";
-//import { verificationType } from '@prisma/client';
 import haversine from "haversine-distance";
 import prisma from "../config/db";
 import { getDriverRideHistory } from '../services/driver.service';
@@ -270,6 +269,17 @@ export const rateUserController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+export const getDriverWalletController = async (req: Request, res: Response) => {
+  try {
+    const driverId = req.query.driverId as string;
+    const wallet = await getDriverWallet(driverId)
+    res.status(200).json(wallet)
+
+  }
+  catch (error: any) {
+    res.status(500).json({ error: "Internal Server Error" })
+  }
+}
 
 export const getDriverRideHistoryController = async (req: Request, res: Response) => {
 
