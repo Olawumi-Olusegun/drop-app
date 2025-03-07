@@ -456,3 +456,108 @@
  *                   type: string
  *                   example: "Internal server error"
  */
+
+
+/**
+ * @swagger
+ * /api/v1/rides/{rideId}/bids:
+ *   get:
+ *     summary: Get all ride bids
+ *     description: Retrieves all bids for a specific ride, including driver details.
+ *     tags:
+ *       - Ride Bids
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: rideId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the ride
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved ride bids
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     bids:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "37c4b2d3-c4f9-48f2-91b3-0d4caf65c8db"
+ *                           rideId:
+ *                             type: string
+ *                             example: "2dce68ed-d88d-48e6-855e-c96154d80100"
+ *                           driverId:
+ *                             type: string
+ *                             example: "bb42baad-021c-414c-9081-514ced7e2298"
+ *                           amount:
+ *                             type: number
+ *                             example: 10000
+ *                           status:
+ *                             type: string
+ *                             example: "online"
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           driver:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 example: "bb42baad-021c-414c-9081-514ced7e2298"
+ *                               fullName:
+ *                                 type: string
+ *                                 example: "John Doe"
+ *                               email:
+ *                                 type: string
+ *                                 example: "johndoe@gmail.com"
+ *                               phoneNumber:
+ *                                 type: string
+ *                                 example: "+2348083205205"
+ *                               onlineStatus:
+ *                                 type: string
+ *                                 example: "online"
+ *                               role:
+ *                                 type: string
+ *                                 example: "driver"
+ *                               userTimezone:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Africa/Lagos"
+ *                               country:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Nigeria"
+ *                               city:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Lagos, Ikeja"
+ *                               profileImage:
+ *                                 type: string
+ *                                 nullable: true
+ *                               averageRating:
+ *                                 type: number
+ *                                 example: 4
+ *                               totalCompletedRides:
+ *                                 type: integer
+ *                                 example: 20
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *       401:
+ *         description: Unauthorized - User must be authenticated
+ *       403:
+ *         description: Forbidden - User does not have permission
+ *       500:
+ *         description: Server error
+ */
