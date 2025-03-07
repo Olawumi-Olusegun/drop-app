@@ -521,6 +521,24 @@ export const rateUser = async (
   return newRating;
 };
 
+
+
+export const getDriverWallet = async (driverId: string) => {
+  const wallet = await prisma.driverWallet.findUnique({
+    where: { driverId }
+  })
+
+  if (!wallet) {
+    return await prisma.driverWallet.create({
+      data: {
+        driverId,
+        balance: 0.0
+      }
+    })
+  }
+
+  return wallet;
+}
 export const getDriverRideHistory = async (
   driverId: string,
   page: number = 1,
