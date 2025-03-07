@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { AuthRequest } from "../types";
+import { AuthRequest, UserRole } from "../types";
 import { Statuscode } from "../utils/Statuscode";
-import { UserRole } from "@prisma/client";
 import prisma from "../config/db";
 
 
