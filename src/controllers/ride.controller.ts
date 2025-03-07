@@ -124,7 +124,25 @@ export const getRideBids = async (req: Request, res: Response) => {
       // Fetch all bids for a ride
       const bids = await prisma.rideBid.findMany({
         where: { rideId },
-        include: { driver: true },
+        include: {
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              onlineStatus: true,
+              role: true,
+              userTimezone: true,
+              country: true,
+              city: true,
+              profileImage: true,
+              averageRating: true,
+              totalCompletedRides: true,
+              createdAt: true,
+            },
+          },
+        },
       });
   
       return res.status(Statuscode.SUCCESS).json({ data: { bids } });

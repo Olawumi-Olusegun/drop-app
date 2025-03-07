@@ -68,6 +68,8 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
   } catch (error) {
 
+    console.log(error)
+
     if (error instanceof jwt.TokenExpiredError) {
       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token has expired" });
       return;
