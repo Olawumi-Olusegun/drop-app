@@ -223,38 +223,36 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
 
 export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
   const { driverId, documents } = payload;
-
   const driver = await prisma.driver.findUnique({ where: { id: driverId } });
   if (!driver) {
-    throw new Error("Driver not Found");
+    throw new Error("Driver not found");
   }
 
-  await prisma.driverIdentification.update({
-    where: { driverId },
-    data: {
-      passportPhotoUrl: documents.passportPhotoUrl
-        ? documents.passportPhotoUrl
-        : undefined,
-      idCardFrontUrl: documents.idCardFrontUrl
-        ? documents.idCardFrontUrl
-        : undefined,
-      idCardBackUrl: documents.idCardBackUrl
-        ? documents.idCardBackUrl
-        : undefined,
-      licensePhotoUrl: documents.licensePhotoUrl,
-      selfieWithLicenseUrl: documents.selfieWithLicenseUrl,
-    },
+
+  await prisma.$transaction(async (tx) => {
+    await tx.driverIdentification.update({
+      where: { driverId },
+      data: {
+        passportPhotoUrl: documents.passportPhotoUrl || undefined,
+        idCardFrontUrl: documents.idCardFrontUrl || undefined,
+        idCardBackUrl: documents.idCardBackUrl || undefined,
+        licensePhotoUrl: documents.licensePhotoUrl,
+        selfieWithLicenseUrl: documents.selfieWithLicenseUrl,
+      },
+    });
+
+    await tx.driverVehicle.update({
+      where: { driverId },
+      data: {
+        carPictureUrl: documents.carPictureUrl,
+        roadWorthiness: documents.roadWorthiness,
+      },
+    });
   });
 
-  await prisma.driverVehicle.update({
-    where: { driverId },
-    data: {
-      carPictureUrl: documents.carPictureUrl,
-      roadWorthiness: documents.roadWorthiness,
-    },
-  });
   return { message: "Documents updated successfully" };
 };
+
 
 export const getDriverDashboard = async (driverId: string, date?: string) => {
   const driver = await prisma.driver.findUnique({
