@@ -465,7 +465,7 @@
  *     summary: Get all ride bids
  *     description: Retrieves all bids for a specific ride, including driver details.
  *     tags:
- *       - Ride Bids
+ *       - Rider
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -560,4 +560,110 @@
  *         description: Forbidden - User does not have permission
  *       500:
  *         description: Server error
+ */
+
+
+
+/**
+ * @swagger
+ * /api/v1/rides/{rideId}/details:
+ *   get:
+ *     summary: Get ride details
+ *     description: Retrieves details of a specific ride by its ID. Only accessible by drivers and admins.
+ *     tags:
+ *       - Rider
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: rideId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the ride
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved ride details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     ride:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           example: "a9d23f47-6437-444a-880d-26b4cf901d16"
+ *                         userId:
+ *                           type: string
+ *                           example: "cdbfbe5e-c0db-404d-9ad5-b5165bf27463"
+ *                         driverId:
+ *                           type: string
+ *                           example: "7456c238-0ec5-44ad-a10e-1691aa4beb2b"
+ *                         status:
+ *                           type: string
+ *                           example: "canceled"
+ *                         pickupLocation:
+ *                           type: string
+ *                           example: "Ikeja Lagos"
+ *                         pickupLatitude:
+ *                           type: number
+ *                           example: 6.6018
+ *                         pickupLongitude:
+ *                           type: number
+ *                           example: 3.3515
+ *                         dropoffLocation:
+ *                           type: string
+ *                           example: "Maryland, Lagos"
+ *                         dropoffLatitude:
+ *                           type: number
+ *                           example: 6.5723
+ *                         dropoffLongitude:
+ *                           type: number
+ *                           example: 3.3705
+ *                         finalFare:
+ *                           type: number
+ *                           example: 0
+ *                         userTimezone:
+ *                           type: string
+ *                           example: "Africa/Lagos"
+ *                         expiresAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2025-03-04T09:43:18.796Z"
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2025-03-04T09:28:18.880Z"
+ *       401:
+ *         description: Unauthorized - User must be authenticated
+ *       403:
+ *         description: Forbidden - User does not have permission
+ *       404:
+ *         description: Ride not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Ride not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
  */

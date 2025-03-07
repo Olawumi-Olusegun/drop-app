@@ -99,6 +99,27 @@ export const cancelRide = async (req: Request, res: Response) => {
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
   };
+
+
+  export const getRideDetails = async (req: Request, res: Response) => {
+
+    try {
+  
+        const {  rideId } = req.params;
+    
+        // Check if ride exists
+        const ride = await prisma.ride.findUnique({ where: { id: rideId } });
+  
+        if (!ride) {
+          return res.status(Statuscode.NOT_FOUND).json({ message: "Ride not found" });
+        }
+  
+        return res.status(Statuscode.CREATED).json({ success: true, data: { ride } });
+      } catch (error) {
+        console.error(error);
+        return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+      }
+    };
   
 
 export const getCancelledRides = async (req: Request, res: Response) => {

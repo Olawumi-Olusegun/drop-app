@@ -1,6 +1,6 @@
 import express from "express";
 import { getAllRidesWithinADriverLocation, getDriversController } from "../controllers/driver.controller";
-import { acceptBid, cancelRide, completeRide, getRideBids, placeBid, rejectBid, requestRide, searchAvailableRides } from "../controllers/ride.controller";
+import { acceptBid, cancelRide, completeRide, getRideBids, getRideDetails, placeBid, rejectBid, requestRide, searchAvailableRides } from "../controllers/ride.controller";
 import { validateQueryParams, validateRequest } from "../validators";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
 import { UserRole } from "@prisma/client";
@@ -16,6 +16,7 @@ router.get("/available", validateQueryParams, validateRequest, getAllRidesWithin
 router.get("/available-drivers/:riderId", getDriversController);
 router.get("/available-rides", searchAvailableRides) //Riders;
 router.patch("/:rideId/complete", authenticateUser, authorizeRole([UserRole.driver, UserRole.admin]), completeRide);
+router.get("/:rideId/details", authenticateUser, authorizeRole([UserRole.driver, UserRole.admin]), getRideDetails);
 router.post("/:rideId/cancel", authenticateUser, authorizeRole([UserRole.rider, UserRole.admin]), cancelRide);
 router.get("/:rideId/bids", authenticateUser, authorizeRole([UserRole.rider, UserRole.admin]), getRideBids);
 router.post("/:rideId/bid", authenticateUser, authorizeRole([UserRole.driver, UserRole.admin]), placeBid);
