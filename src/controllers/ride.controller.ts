@@ -52,7 +52,7 @@ export const requestRide = async (req: Request, res: Response) => {
             dropoffLatitude,
             dropoffLongitude,
             userTimezone,
-            price: price.toString(),
+            finalFare: parseFloat(price),
             expiresAt: expirationTime(15) //The ride expires after 15 minutes
         } });
   
@@ -75,7 +75,7 @@ export const requestRide = async (req: Request, res: Response) => {
 
 export const cancelRide = async (req: Request, res: Response) => {
 
-    try {
+  try {
 
       const { userId, rideId, reason } = req.body;
   
@@ -103,12 +103,12 @@ export const cancelRide = async (req: Request, res: Response) => {
 
 export const getCancelledRides = async (req: Request, res: Response) => {
   try {
-    
+
     const cancelledRides = await prisma.rideCancel.findMany({
       include: { user: true },
     });
 
-    return res.status(Statuscode.SUCCESS).json({ data: { cancelledRides }});
+    return res.status(Statuscode.SUCCESS).json({ data: { cancelledRides } });
 
   } catch (error) {
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error.", error });
@@ -148,7 +148,7 @@ export const acceptBid = async (req: Request, res: Response) => {
 
     await prisma.ride.update({
       where: { id: rideId },
-      data: { driverId: bid.driverId, price: bid.amount.toString(), status: "accepted" },
+      data: { driverId: bid.driverId, finalFare: bid.amount, status: "accepted" },
     });
 
     await prisma.rideBid.updateMany({

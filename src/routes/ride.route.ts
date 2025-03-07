@@ -1,6 +1,6 @@
 import express from "express";
-import { placeBid, getAllRidesWithinADriverLocation, getDriversController } from "../controllers/driver.controller";
-import { acceptBid, cancelRide, completeRide, getRideBids, rejectBid, requestRide, searchAvailableRides } from "../controllers/ride.controller";
+import { getAllRidesWithinADriverLocation, getDriversController } from "../controllers/driver.controller";
+import { acceptBid, cancelRide, completeRide, getRideBids, placeBid, rejectBid, requestRide, searchAvailableRides } from "../controllers/ride.controller";
 import { validateQueryParams, validateRequest } from "../validators";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
 import { UserRole } from "@prisma/client";
