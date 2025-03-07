@@ -1,7 +1,7 @@
 
 /**
  * @swagger
- * /api/v1/request-ride:
+ * /api/v1/rides/request-ride:
  *   post:
  *     summary: Request a ride
  *     description: Allows a user to request a ride by providing pickup and dropoff locations.
@@ -86,7 +86,7 @@
 
 /**
  * @swagger
- * /api/v1/accept-ride:
+ * /api/v1/rides/accept-ride:
  *   post:
  *     summary: Accept a ride bid
  *     description: Allows a driver to accept a ride request bid.
@@ -134,7 +134,7 @@
 
 /**
  * @swagger
- * /api/v1/reject-ride:
+ * /api/v1/rides/reject-ride:
  *   post:
  *     summary: Reject a ride bid
  *     description: Allows a driver to reject a ride request bid.
@@ -174,7 +174,7 @@
 
 /**
  * @swagger
- * /api/v1/available:
+ * /api/v1/rides/available:
  *   get:
  *     summary: Get all available rides within a driver's location
  *     description: Retrieves a list of rides available within a specified radius from the driver's location.
@@ -234,7 +234,7 @@
 
 /**
  * @swagger
- * /api/v1/{rideId}/bids:
+ * /api/v1/rides/{rideId}/bids:
  *   get:
  *     summary: Get all bids for a specific ride
  *     description: Retrieves a list of bids placed by drivers for a specific ride request.
@@ -283,7 +283,7 @@
 
 /**
  * @swagger
- * /api/v1/{rideId}/bid:
+ * /api/v1/rides/{rideId}/bid:
  *   post:
  *     summary: Driver places a bid on a ride
  *     description: Allows a driver to place a bid for a specific ride request.
@@ -357,7 +357,7 @@
 
 /**
  * @swagger
- * /api/v1/search-available-rides:
+ * /api/v1/rides/search-available-rides:
  *   get:
  *     summary: Search for available rides within a 5km radius
  *     description: |
@@ -365,7 +365,7 @@
  *       
  *       **Example Request URL:**
  *       ```
- *       /api/v1/search-available-rides?latitude=40.712776&longitude=-74.005974
+ *       /api/v1/rides/search-available-rides?latitude=40.712776&longitude=-74.005974
  *       ```
  *     tags:
  *       - Rider
