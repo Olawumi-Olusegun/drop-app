@@ -24,7 +24,7 @@
  *               - userTimezone
  *               - price
  *             properties:
- *               userId:
+ *               riderId:
  *                 type: string
  *                 example: "ebd46946-8247-41a1-a5a6-eb6eb3d1e78d"
  *                 description: The ID of the user requesting the ride.
@@ -100,11 +100,16 @@
  *             type: object
  *             required:
  *               - bidId
+ *               - rideId
  *             properties:
  *               bidId:
  *                 type: string
  *                 example: "7cc84ef7-5ece-4d1a-b0c8-8e6408ca5fc1"
  *                 description: The ID of the bid being accepted.
+ *               rideId:
+ *                 type: string
+ *                 example: "28ehdt45-23de-w738-y74y-shey46rhdur6"
+ *                 description: The ID of the ride.
  *     responses:
  *       200:
  *         description: Ride bid accepted successfully.
