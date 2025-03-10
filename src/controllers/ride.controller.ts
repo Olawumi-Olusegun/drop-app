@@ -153,7 +153,6 @@ export const getRideBids = async (req: Request, res: Response) => {
               id: true,
               user: {
                 select: {
-                  id: true,
                   fullName: true,
                   email: true,
                   phoneNumber: true,
@@ -172,8 +171,14 @@ export const getRideBids = async (req: Request, res: Response) => {
           },
         },
       });
-  
-      return res.status(Statuscode.SUCCESS).json({ data: { bids } });
+
+
+      // Restructure the data
+      const formattedRideBids = bids.map(({ id, driver, ...rest }) => ({
+        id, ...rest, driverId: driver?.id, ...(driver?.user ?? {}),
+      }));
+
+      return res.status(Statuscode.SUCCESS).json({ data: { bids: formattedRideBids } });
     } catch (error) {
       console.error(error);
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
