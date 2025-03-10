@@ -61,7 +61,7 @@ model Ride {
   expiresAt        DateTime?
   createdAt        DateTime     @default(now())
 
-  user   User  @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
   driver Driver? @relation(name: "DriverRides", fields: [driverId], references: [id])
 }
 
@@ -73,7 +73,7 @@ model RideBid {
   status    BidStatus @default(pending)
   createdAt DateTime  @default(now())
 
-  ride   Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  ride   Ride   @relation(fields: [rideId], references: [id], onDelete: Cascade)
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 }
 
@@ -136,8 +136,8 @@ model Driver {
   user            User                   @relation(fields: [userId], references: [id])
   identifications DriverIdentification[]
   vehicles        DriverVehicle[]
-  ridesAsDriver         Ride[]             @relation(name: "DriverRides")
-  rideBids              RideBid[]
+  ridesAsDriver   Ride[]                 @relation(name: "DriverRides")
+  rideBids        RideBid[]
   DriverWallet    DriverWallet[]
 }
 
