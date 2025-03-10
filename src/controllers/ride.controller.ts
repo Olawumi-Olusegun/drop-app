@@ -42,20 +42,21 @@ export const requestRide = async (req: Request, res: Response) => {
 
   // Create a new ride request
     const ride = await prisma.ride.create({
-        data: {
-            userId: riderId,
-            status: "pending",
-            pickupLocation,
-            pickupLongitude,
-            pickupLatitude,
-            dropoffLocation,
-            dropoffLatitude,
-            dropoffLongitude,
-            userTimezone,
-            finalFare: parseFloat(price),
-            expiresAt: expirationTime(15), //The ride expires after 15 minutes
-            driverId: null,
-        } });
+      data: {
+        userId: riderId,
+        status: "pending",
+        pickupLocation,
+        pickupLongitude,
+        pickupLatitude,
+        dropoffLocation,
+        dropoffLatitude,
+        dropoffLongitude,
+        userTimezone,
+        finalFare: parseFloat(price),
+        expiresAt: expirationTime(15), // The ride expires after 15 minutes
+        driverId: null,
+      },
+    });
   
      res.status(Statuscode.CREATED).json({
        message: "Ride request created successfully",
@@ -180,34 +181,44 @@ export const getRideBids = async (req: Request, res: Response) => {
 };
 
   // Rider accepts a bid
-export const acceptBid = async (req: Request, res: Response) => {
-
-  try {
-
-    const { rideId, bidId } = req.body;
-
-    const bid = await prisma.rideBid.findUnique({ where: { id: bidId } });
-
-    if (!bid) {
-      return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Bid not found" });
-    }
-
-    await prisma.ride.update({
-      where: { id: rideId },
-      data: { driverId: bid.driverId, finalFare: bid.amount, status: "accepted" },
-    });
-
-    await prisma.rideBid.updateMany({
-      where: { rideId, id: { not: bidId } },
-      data: { status: "rejected" },
-    });
-
-    return res.status(Statuscode.SUCCESS).json({ success: true, message: "Bid accepted" });
-  } catch (error) {
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, message: error });
-  }
-};
+  export const acceptBid = async (req: Request, res: Response) => {
+    try {
+      const { rideId, bidId } = req.body;
   
+      const bid = await prisma.rideBid.findUnique({ where: { id: bidId } });
+  
+      if (!bid) {
+        return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Bid not found" });
+      }
+  
+      // Check if the driver exists
+      const driver = await prisma.driver.findUnique({
+        where: { id: bid.driverId },
+      });
+  
+      if (!driver) {
+        return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Driver not found" });
+      }
+  
+      // Update the ride with the driver and fare
+      await prisma.ride.update({
+        where: { id: rideId },
+        data: { driverId: bid.driverId, finalFare: bid.amount, status: "accepted" },
+      });
+  
+      // Reject all other bids for this ride
+      await prisma.rideBid.updateMany({
+        where: { rideId, id: { not: bidId } },
+        data: { status: "rejected" },
+      });
+  
+      return res.status(Statuscode.SUCCESS).json({ success: true, message: "Bid accepted" });
+    } catch (error) {
+      console.error("Error accepting bid:", error);
+      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error", error });
+    }
+  };
+
 
 export const rejectBid = async (req: Request, res: Response) => {
 
