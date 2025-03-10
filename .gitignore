@@ -6,3 +6,4 @@ build/
 migrations/
 seed.ts
 .vscode
+.DS_Store

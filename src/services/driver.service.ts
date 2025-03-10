@@ -352,7 +352,14 @@ export const getRideDetails = async (rideId: string): Promise<Ride | null> => {
 };
 
 export const getUserDetails = async (userId: string) => {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      fullName: true,
+      averageRating: true,
+      createdAt: true
+    }
+  });
   if (!user) {
     throw new Error("User not found");
   }
@@ -387,24 +394,28 @@ export const acceptRide = async (
 };
 export const cancelRideBid = async (
   rideId: string,
-  driverId: string
+  driverId: string,
+  bidId: string
 ): Promise<RideBid> => {
-  const bid = await prisma.rideBid.findFirst({
+  const bid = await prisma.rideBid.findUnique({
     where: {
-      rideId,
-      driverId,
-      status: BidStatus.pending,
+      id: bidId
     },
   });
 
   if (!bid) {
     throw new Error("No pending bid found for this ride and driver");
+
   }
+  if(bid.status !== BidStatus.pending){
+    throw new Error("This bid cannot be cancelled")
+  }
+
 
   const updatedBid = await prisma.rideBid.update({
     where: { id: bid.id },
     data: {
-      status: BidStatus.rejected,
+      status: BidStatus.cancelled,
     },
   });
 

@@ -5,6 +5,7 @@ import passport from 'passport';
 export interface AuthRequest extends Request {
   user?: {
     userId: string;
+    driverId?: string
     role: string;
     googleId?: string;
   };
