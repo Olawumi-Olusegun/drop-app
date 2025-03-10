@@ -617,6 +617,10 @@
  *                 type: string
  *                 format: uuid
  *                 example: "driver-uuid"
+ *               bidId:
+ *                  type: string
+ *                  format: uuid
+ *                  example: "bid-uuid"
  *             required:
  *               - driverId
  *     responses:
