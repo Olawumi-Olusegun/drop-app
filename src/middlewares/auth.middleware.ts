@@ -63,6 +63,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
     req.user = {
       userId: decoded.userId,
+      driverId: decoded.driverId,
       role: decoded.role,
     };
 

@@ -4,11 +4,13 @@ import jwt, { JwtPayload, TokenExpiredError, JsonWebTokenError, NotBeforeError }
 export const generateToken = ({
   userId,
   role,
+  driverId,
   expiresIn = "5h",
   secret = process.env.JWT_ACCESS_TOKEN_SECRET || "",
 }: {
   userId: string;
   role: string;
+  driverId?: string
   expiresIn?: any;
   secret?: string;
 }): string => {
@@ -16,7 +18,7 @@ export const generateToken = ({
   if (!secret) {
     throw new Error("JWT_SECRET is not defined in environment variables");
   }
-  return jwt.sign({ userId, role }, secret, { expiresIn });
+  return jwt.sign({ userId, driverId, role }, secret, { expiresIn });
 };
 
 type Token = {
@@ -32,7 +34,7 @@ export const verifyJwtToken = ({
     const decoded = jwt.verify(token, secret || "") as JwtPayload;
     return { valid: true, payload: decoded };
   } catch (error) {
-    const decoded = jwt.decode(token) as JwtPayload | null; 
+    const decoded = jwt.decode(token) as JwtPayload | null;
 
     if (error instanceof TokenExpiredError) {
       return { valid: false, error: "Token has expired", payload: decoded || undefined };
