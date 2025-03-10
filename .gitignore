@@ -3,7 +3,7 @@ build/
 .env
 .env.development
 
-migrations/
+
 seed.ts
 .vscode
 .DS_Store
