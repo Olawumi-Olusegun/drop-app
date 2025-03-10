@@ -29,36 +29,37 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
   const secret = process.env.JWT_ACCESS_TOKEN_SECRET || "";
 
-  if(!secret) {
+  if (!secret) {
     res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token!" });
     return;
   }
 
   try {
-  
+
     const decoded = jwt.verify(token, secret) as VerifyToken;
+
 
     if (!decoded || !decoded?.userId) {
       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
       return;
     }
-    
-      const userExist = await prisma.user.findUnique({
-        where: { id: decoded?.userId },
-        select: { id: true, accessToken: true }
-      });
 
-      if(!userExist) {
-        res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Unrecognisable user identity" });
-        return;
-      }
+    const userExist = await prisma.user.findUnique({
+      where: { id: decoded?.userId },
+      select: { id: true, accessToken: true }
+    });
 
-      console.log(authHeader === userExist.accessToken)
+    if (!userExist) {
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Unrecognisable user identity" });
+      return;
+    }
 
-      if(authHeader !== userExist.accessToken) {
-        res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
-        return;
-      }
+
+
+    if (token !== userExist.accessToken) {
+      res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+      return;
+    }
 
 
     req.user = {

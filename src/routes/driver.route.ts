@@ -6,6 +6,7 @@ import {
     DocumentUploadController,
     getAvailableRidesController,
     getDriverDashboardController,
+    getDriverProfileController,
     getDriverRideHistoryController,
     getDriversController,
     getDriverWalletController,
@@ -22,6 +23,7 @@ import {
     validateCancelBid,
     validateCompleteRide,
     validateDriverDashboard,
+    validateDriverProfile,
     validateDriverRegistration,
     validateDriverRideHistory,
     validateDriverWallet,
@@ -31,6 +33,8 @@ import {
     validateStartRide,
     validateUpdateDriverDocuments,
 } from "../validators/driverValidator";
+import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
+import { UserRole } from "@prisma/client";
 
 const router = express.Router();
 
@@ -43,6 +47,7 @@ router.post(
     validateUpdateDriverDocuments,
     DocumentUploadController
 );
+router.get('/profile', authenticateUser, validateDriverProfile, getDriverProfileController)
 router.get("/dashboard", validateDriverDashboard, getDriverDashboardController);
 
 router.get("/available", validateAvailableRides, getAvailableRidesController);
