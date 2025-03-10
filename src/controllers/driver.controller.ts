@@ -342,7 +342,8 @@ export const getDriversController = async (req: Request, res: Response) => {
     // Fetch available drivers
     const drivers = await getAvailableDrivers(riderId, maxDistance, unit);
 
-    return res.status(Statuscode.SUCCESS).json({ message: "Drivers", drivers });
+    res.status(Statuscode.SUCCESS).json({ message: "Drivers", drivers });
+    return
   } catch (error) {
     console.error("Error in getDriversController:", error);
     res
@@ -435,7 +436,7 @@ export const createBid = async (req: Request, res: Response) => {
       data: {
         rideId,
         driverId,
-        amount,
+        amount: parseFloat(amount),
       },
     });
 

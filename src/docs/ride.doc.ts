@@ -1,3 +1,4 @@
+
 /**
  * @swagger
  * /api/v1/request-ride:
@@ -20,8 +21,10 @@
  *               - dropoffLocation
  *               - dropoffLatitude
  *               - dropoffLongitude
+ *               - userTimezone
+ *               - price
  *             properties:
- *               userId:
+ *               riderId:
  *                 type: string
  *                 example: "ebd46946-8247-41a1-a5a6-eb6eb3d1e78d"
  *                 description: The ID of the user requesting the ride.
@@ -53,6 +56,14 @@
  *                 format: float
  *                 example: 1.976
  *                 description: The longitude of the dropoff location.
+ *               userTimezone:
+ *                 type: string
+ *                 example: "Africa/Lagos"
+ *                 description: User timezone
+ *               price:
+ *                 type: string
+ *                 example: "5000"
+ *                 description: Rider budget for ride
  *     responses:
  *       200:
  *         description: Ride request created successfully.
@@ -89,11 +100,16 @@
  *             type: object
  *             required:
  *               - bidId
+ *               - rideId
  *             properties:
  *               bidId:
  *                 type: string
  *                 example: "7cc84ef7-5ece-4d1a-b0c8-8e6408ca5fc1"
  *                 description: The ID of the bid being accepted.
+ *               rideId:
+ *                 type: string
+ *                 example: "28ehdt45-23de-w738-y74y-shey46rhdur6"
+ *                 description: The ID of the ride.
  *     responses:
  *       200:
  *         description: Ride bid accepted successfully.
@@ -269,7 +285,7 @@
  * @swagger
  * /api/v1/{rideId}/bid:
  *   post:
- *     summary: Place a bid on a ride
+ *     summary: Driver places a bid on a ride
  *     description: Allows a driver to place a bid for a specific ride request.
  *     tags:
  *       - Rider
@@ -290,6 +306,10 @@
  *               - driverId
  *               - amount
  *             properties:
+ *               rideId:
+ *                 type: string
+ *                 example: "6b5eb1b2-b20c-4ar-85e0-84896eyf9aer"
+ *                 description: The ID of the ride.
  *               driverId:
  *                 type: string
  *                 example: "4d5eb1b2-b36c-4ffd-94e0-d4896bef9aec"
@@ -332,4 +352,107 @@
  *         description: Ride not found.
  *       500:
  *         description: Internal server error.
+ */
+
+
+/**
+ * @swagger
+ * /api/v1/search-available-rides:
+ *   get:
+ *     summary: Search for available rides within a 5km radius
+ *     description: |
+ *       Retrieves a list of available rides within a 5km radius based on the user's latitude and longitude.
+ *       
+ *       **Example Request URL:**
+ *       ```
+ *       /api/v1/search-available-rides?latitude=40.712776&longitude=-74.005974
+ *       ```
+ *     tags:
+ *       - Rider
+ *     parameters:
+ *       - in: query
+ *         name: latitude
+ *         schema:
+ *           type: number
+ *         required: true
+ *         description: The latitude of the user's location.
+ *       - in: query
+ *         name: longitude
+ *         schema:
+ *           type: number
+ *         required: true
+ *         description: The longitude of the user's location.
+ *     responses:
+ *       200:
+ *         description: A list of available rides within 5km.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 rides:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: "6b1e7972-006b-48ca-92a9-7a4b5a1339e2"
+ *                         description: The unique ride ID.
+ *                       farePrice:
+ *                         type: string
+ *                         example: "5000"
+ *                         description: Price for the ride.
+ *                       fullName:
+ *                         type: string
+ *                         example: "John Doe"
+ *                         description: Name of the driver.
+ *                       pickupLocation:
+ *                         type: string
+ *                         example: "123 Main Street"
+ *                         description: The pickup location of the ride.
+ *                       dropoffLocation:
+ *                         type: string
+ *                         example: "456 Oak Avenue"
+ *                         description: The dropoff location of the ride.
+ *                       pickupLatitude:
+ *                         type: number
+ *                         example: 40.712776
+ *                         description: The latitude of the pickup location.
+ *                       pickupLongitude:
+ *                         type: number
+ *                         example: -74.005974
+ *                         description: The longitude of the pickup location.
+ *                       distance:
+ *                         type: object
+ *                         properties:
+ *                           value:
+ *                             type: number
+ *                             format: float
+ *                             example: 3.8
+ *                             description: The distance of the ride from the user's location.
+ *                           unit:
+ *                             type: string
+ *                             example: "km"
+ *                             description: The unit of distance measurement (kilometers).
+ *       400:
+ *         description: Bad request due to missing latitude or longitude.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Latitude and Longitude are required"
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Internal server error"
  */
