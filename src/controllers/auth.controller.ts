@@ -303,9 +303,12 @@ export const signInWithEmail = async (req: Request, res: Response) => {
      if (!isValidPassword) {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
      }
+     const driver = await prisma.driver.findUnique({
+      where: { userId: user?.id }
+    })
 
-      const accessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
-      const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
+    const accessToken = generateToken({ userId: user.id, driverId: driver?.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: user.role });
+    const refreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: user.role, expiresIn: "30d" });
 
       const updatedUser = await prisma.user.update({
         where: { id: user.id },
@@ -458,9 +461,12 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     if(!verifyToken.valid) {
       return res.status(Statuscode.UNAUTHORIZED).json({ message: verifyToken.error })
     }
+    const driver = await prisma.driver.findUnique({
+      where: { userId: user?.id }
+    })
 
-    const newAccessToken = generateToken({ userId: user.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: UserRole.RIDER });
-    const newRefreshToken = generateToken({ userId: user.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: UserRole.RIDER, expiresIn: "30d" });
+    const newAccessToken = generateToken({ userId: user.id, driverId: driver?.id, secret: process.env.JWT_ACCESS_TOKEN_SECRET, role: user.role });
+    const newRefreshToken = generateToken({ userId: user.id, driverId: driver?.id, secret: process.env.JWT_REFRESH_TOKEN_SECRET, role: user.role, expiresIn: "30d" });
 
     await prisma.user.update({
       where: { id: user.id },

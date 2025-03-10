@@ -38,8 +38,6 @@ model User {
   otp                   OTP?
   Driver                Driver?
   ridesAsUser           Ride[]             @relation(name: "UserRides")
-  ridesAsDriver         Ride[]             @relation(name: "DriverRides")
-  rideBids              RideBid[]
   rideCancellations     RideCancel[]
 
   userRatings UserRating[] @relation("UserRatings")
@@ -64,7 +62,7 @@ model Ride {
   createdAt        DateTime     @default(now())
 
   user   User  @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
-  driver User? @relation(name: "DriverRides", fields: [driverId], references: [id])
+  driver Driver? @relation(name: "DriverRides", fields: [driverId], references: [id])
 }
 
 model RideBid {
@@ -76,7 +74,7 @@ model RideBid {
   createdAt DateTime  @default(now())
 
   ride   Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  driver User @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 }
 
 model RideCancel {
@@ -138,6 +136,8 @@ model Driver {
   user            User                   @relation(fields: [userId], references: [id])
   identifications DriverIdentification[]
   vehicles        DriverVehicle[]
+  ridesAsDriver         Ride[]             @relation(name: "DriverRides")
+  rideBids              RideBid[]
   DriverWallet    DriverWallet[]
 }
 
@@ -217,5 +217,6 @@ enum RideStatus {
 enum BidStatus {
   pending
   accepted
+  cancelled
   rejected
 }

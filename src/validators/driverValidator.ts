@@ -69,6 +69,18 @@ export const validateUpdateDriverDocuments = [
   }
 ];
 
+export const validateDriverProfile = [
+  query('userId')
+    .exists().withMessage('userId is required')
+    .isUUID().withMessage('userId must be a valid UUID'),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
 export const validateDriverDashboard = [
   query('driverId')
     .exists().withMessage('driverId is required')
@@ -145,6 +157,8 @@ export const validateCancelBid = [
   body('driverId')
     .exists().withMessage('driverId is required')
     .isUUID().withMessage('driverId must be a valid UUID'),
+  body("bidId")
+    .exists().withMessage("bidId is required"),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });

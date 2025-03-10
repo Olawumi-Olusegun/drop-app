@@ -300,6 +300,41 @@
 
 /**
  * @swagger
+ * /api/v1/drivers/profile:
+ *   get:
+ *     summary: Get driver profile
+ *     description: Retrieves the profile details of the authenticated driver, including driver-specific information
+ *     tags:
+ *       - Driver
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the driver.
+ *     responses:
+ *       200:
+ *         description: Driver profile retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Invalid parameters.
+ *       404:
+ *         description: Driver not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+/**
+ * @swagger
  * /api/v1/drivers/dashboard:
  *   get:
  *     summary: Get driver dashboard metrics
@@ -343,7 +378,9 @@
  *       500:
  *         description: Internal server error.
  */
+
 /**
+
  * @swagger
  * /api/v1/drivers/available:
  *   get:
@@ -580,6 +617,10 @@
  *                 type: string
  *                 format: uuid
  *                 example: "driver-uuid"
+ *               bidId:
+ *                  type: string
+ *                  format: uuid
+ *                  example: "bid-uuid"
  *             required:
  *               - driverId
  *     responses:

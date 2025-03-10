@@ -6,6 +6,7 @@ import {
   getAvailableDrivers,
   getAvailableRides,
   getDriverDashboard,
+  getDriverProfile,
   getDriverWallet,
   getRideDetails,
   getUserDetails,
@@ -19,6 +20,9 @@ import { Statuscode } from "../utils/Statuscode";
 import haversine from "haversine-distance";
 import prisma from "../config/db";
 import { getDriverRideHistory } from '../services/driver.service';
+import { AuthRequest } from "../types";
+import { HttpStatusCode } from "axios";
+
 
 export const registerDriverController = async (req: Request, res: Response) => {
   try {
@@ -98,9 +102,43 @@ export const DocumentUploadController = async (req: Request, res: Response) => {
   }
 };
 
+export const getDriverProfileController = async (req: Request, res: Response) => {
+  const userId = req.query.userId as string
+  const user = (req as AuthRequest).user?.userId
+
+  try {
+    if (user !== userId) {
+      throw new Error("Invalid Access")
+    }
+
+
+    const driver = await getDriverProfile(userId)
+
+
+    return res.status(200).json(driver)
+  }
+  catch (error: any) {
+
+    if (error.message === "Driver does not exist") {
+      return res.status(404).json({ error: error.message })
+    }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
+    res.status(500).json({ error: error.message })
+  }
+}
+
 export const getDriverDashboardController = async (req: Request, res: Response) => {
   try {
+
+    const driver = (req as AuthRequest).user?.driverId
+
+
     const driverId = req.query.driverId as string
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
     const date = req.query.date as string | undefined
     const dashboard = await getDriverDashboard(driverId, date)
     res.status(200).json(dashboard)
@@ -108,6 +146,9 @@ export const getDriverDashboardController = async (req: Request, res: Response) 
   catch (error: any) {
     if (error.message === "Driver not found") {
       return res.status(404).json({ error: error.message })
+    }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
     }
   }
 }
@@ -164,6 +205,12 @@ export const acceptRideController = async (req: Request, res: Response) => {
     const { rideId } = req.params;
     const { driverId, proposedPrice } = req.body;
 
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
+
+
     const result = await acceptRide(rideId, driverId, proposedPrice);
     res.status(200).json(result);
   } catch (error: any) {
@@ -174,6 +221,9 @@ export const acceptRideController = async (req: Request, res: Response) => {
     if (error.message === "Ride is no longer available") {
       return res.status(400).json({ error: error.message });
     }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
     console.log(error.message)
     res.status(500).json({ error: "Internal server error" });
   }
@@ -182,9 +232,14 @@ export const acceptRideController = async (req: Request, res: Response) => {
 export const cancelRideBidController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
-    const { driverId } = req.body;
+    const { driverId, bidId } = req.body;
 
-    const updatedBid = await cancelRideBid(rideId, driverId);
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
+
+    const updatedBid = await cancelRideBid(rideId, driverId, bidId);
     res
       .status(200)
       .json({ message: "Bid cancelled successfully", bid: updatedBid });
@@ -192,7 +247,12 @@ export const cancelRideBidController = async (req: Request, res: Response) => {
     if (error.message == "No pending bid found for this ride and driver") {
       return res.status(404).json({ error: error.message });
     }
-    console.log(error.message)
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
+    if(error.message === "This bid cannot be cancelled"){
+      return res.status(Statuscode.FORBIDDEN).json({error: error.message})
+    }
     res.status(500).json({ error: "Internal server error" })
 
   }
@@ -202,12 +262,19 @@ export const notifyArrivalController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
     const { driverId } = req.body;
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
 
     const result = await notifyArrival(rideId, driverId);
     res.status(200).json(result);
   } catch (error: any) {
     if (error.message === "Ride not found") {
       return res.status(404).json({ error: error.message });
+    }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
     }
     res.status(500).json({ error: "Internal server Error" });
   }
@@ -217,6 +284,10 @@ export const startRideController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
     const { driverId } = req.body;
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
     const updatedRide = await startRide(rideId, driverId);
 
     res.status(200).json(updatedRide);
@@ -230,6 +301,9 @@ export const startRideController = async (req: Request, res: Response) => {
     ) {
       return res.status(400).json({ error: error.message });
     }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
 
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -239,6 +313,10 @@ export const completeRideController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
     const { driverId } = req.body;
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
     const finalFare = req.body.finalFare as string
     const updatedRide = await completeRide(rideId, driverId, finalFare);
     res.status(200).json(updatedRide);
@@ -252,6 +330,9 @@ export const completeRideController = async (req: Request, res: Response) => {
     ) {
       return res.status(400).json({ error: error.message });
     }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -260,11 +341,19 @@ export const rateUserController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { driverId, rating, comment } = req.body;
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
+
     const newRating = await rateUser(userId, driverId, rating, comment);
     res.status(200).json(newRating);
   } catch (error: any) {
     if (error.message === "User not found") {
       return res.status(404).json({ error: error.message });
+    }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
     }
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -285,16 +374,28 @@ export const getDriverRideHistoryController = async (req: Request, res: Response
 
   try {
     const driverId = req.query.driverId as string;
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+    }
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10
 
     const { rides, totalCount } = await getDriverRideHistory(driverId, page, limit)
     res.status(200).json({ rides, totalCount, page, limit })
   }
-  catch (error) {
+  catch (error: any) {
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
     res.status(500).json({ error: "Internal Server Error" })
   }
 }
+
+
+
+
+
 export const getDriversController = async (req: Request, res: Response) => {
   try {
     const { riderId } = req.params;
