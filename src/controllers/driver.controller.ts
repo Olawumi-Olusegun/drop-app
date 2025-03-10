@@ -6,6 +6,7 @@ import {
   getAvailableDrivers,
   getAvailableRides,
   getDriverDashboard,
+  getDriverProfile,
   getDriverWallet,
   getRideDetails,
   getUserDetails,
@@ -19,6 +20,9 @@ import { Statuscode } from "../utils/Statuscode";
 import haversine from "haversine-distance";
 import prisma from "../config/db";
 import { getDriverRideHistory } from '../services/driver.service';
+import { AuthRequest } from "../types";
+import { HttpStatusCode } from "axios";
+
 
 export const registerDriverController = async (req: Request, res: Response) => {
   try {
@@ -97,6 +101,33 @@ export const DocumentUploadController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+export const getDriverProfileController = async (req: Request, res: Response) => {
+  const userId = req.query.userId as string
+  const user = (req as AuthRequest).user?.userId
+
+  try {
+    if (user !== userId) {
+      throw new Error("Invalid Access")
+    }
+
+
+    const driver = await getDriverProfile(userId)
+
+
+    return res.status(200).json(driver)
+  }
+  catch (error: any) {
+
+    if (error.message === "Driver does not exist") {
+      return res.status(404).json({ error: error.message })
+    }
+    if (error.message === "Invalid Access") {
+      return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
+    }
+    res.status(500).json({ error: error.message })
+  }
+}
 
 export const getDriverDashboardController = async (req: Request, res: Response) => {
   try {

@@ -253,7 +253,18 @@ export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
   return { message: "Documents updated successfully" };
 };
 
+export const getDriverProfile = async (userId: string) => {
 
+  const driver = await prisma.driver.findUnique({
+    where: { userId }
+  })
+
+  if (!driver) {
+    throw new Error("Driver does not exist")
+  }
+
+  return driver
+}
 export const getDriverDashboard = async (driverId: string, date?: string) => {
   const driver = await prisma.driver.findUnique({
     where: { id: driverId },
