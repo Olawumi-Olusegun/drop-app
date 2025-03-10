@@ -53,7 +53,8 @@ export const requestRide = async (req: Request, res: Response) => {
             dropoffLongitude,
             userTimezone,
             finalFare: parseFloat(price),
-            expiresAt: expirationTime(15) //The ride expires after 15 minutes
+            expiresAt: expirationTime(15), //The ride expires after 15 minutes
+            driverId: null,
         } });
   
      res.status(Statuscode.CREATED).json({
@@ -180,6 +181,7 @@ export const getRideBids = async (req: Request, res: Response) => {
 
   // Rider accepts a bid
 export const acceptBid = async (req: Request, res: Response) => {
+
   try {
 
     const { rideId, bidId } = req.body;
