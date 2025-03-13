@@ -432,7 +432,7 @@ export const cancelRideBid = async (
   const updatedBid = await prisma.rideBid.update({
     where: { id: bid.id },
     data: {
-      status: BidStatus.cancelled,
+      status: BidStatus.rejected,
     },
   });
 
