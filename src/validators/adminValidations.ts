@@ -8,26 +8,26 @@ export const validateGetAllUsers = [
     query('limit')
     .optional()
     .isInt({min: 1}).withMessage("limit must be greater than or equal to 1"),
-    (req: Request, res: Response, next: NextFunction)=>{
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            return res.status(400).json({errors:errors.array()})
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
         }
-        next()
-    }
+        next();
+      },
 
 ]
 
 export const validateGetUSer =[
     query('userId')
     .exists().withMessage("userId is required"),
-    (req: Request, res: Response, next: NextFunction)=>{
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            return res.status(400).json({errors:errors.array()})
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
         }
-        next()
-    }
+        next();
+      },
 
 ]
 
@@ -38,13 +38,13 @@ export const validateGetAllDrivers = [
     query('limit')
     .optional()
     .isInt({min: 1}).withMessage("limit must be an integer greater than zero"),
-    (req: Request, res: Response, next: NextFunction)=>{
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            return res.status(400).json({error: errors.array})
-        }
-        next()
-    }
+    (req: Request, res: Response, next: NextFunction) => {
+     const errors = validationResult(req);
+     if (!errors.isEmpty()) {
+       return res.status(400).json({ errors: errors.array() });
+     }
+     next();
+   },
 
 ]
 
@@ -52,27 +52,27 @@ export const validateGetAllDrivers = [
 export const  validateGetDriver = [
     query('driverId')
     .exists().withMessage("driverId is required"),
-    (req: Request, res: Response, next: NextFunction)=>{
-
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            return res.status(400).json({error: errors.array})
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
         }
-    }
+        next();
+      },
 ]
 
 
 
 export const  validateapproveDriver = [
-    body('userId')
-    .exists().withMessage("userId is required"),
-    (req: Request, res: Response, next: NextFunction)=>{
-
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            return res.status(400).json({error: errors.array})
+    body('driverId')
+    .exists().withMessage("driverId is required"),
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
         }
-    }
+        next();
+      },
 ]
 
 
@@ -80,12 +80,12 @@ export const  validateapproveDriver = [
 export const  validatesuspendDriver = [
     body('driverId')
     .exists().withMessage("driverId is required"),
-    (req: Request, res: Response, next: NextFunction)=>{
-
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            return res.status(400).json({error: errors.array})
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
         }
-    }
+        next();
+      },
 ]
 

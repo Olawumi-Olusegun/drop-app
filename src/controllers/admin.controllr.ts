@@ -69,25 +69,22 @@ export const getAllDrivers = async (req: Request, res: Response) => {
 
 export const getDriver = async (req: Request, res: Response) => {
   try {
-    const driverId = req.query.userId as string;
+    const driverId = req.query.driverId as string;
     const driver = await prisma.driver.findUnique({
       where: {
         id: driverId,
+        
       },
+      include: { identifications: true, vehicles: true}
     });
     if (!driver) {
       return res.status(Statuscode.NOT_FOUND).json({ error: "User not found" });
     }
-
-    const _driver = await prisma.driver.findUnique({
-      where: { id: driverId},
-      include: { identifications: true, vehicles: true, user: true },
-    });
-
-    const driverdata = { driver };
-    res.status(Statuscode.SUCCESS).json(driverdata);
+    
+    res.status(Statuscode.SUCCESS).json(driver);
   } catch (error: any) {
-    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error: error.message });
+    console.log(error)
+    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error: "INTERNAL SERVER ERROR"});
   }
 };
 
