@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { AuthRequest } from "../types";
+import { AuthRequest, UserRole } from "../types";
 import { Statuscode } from "../utils/Statuscode";
-import { UserRole } from "@prisma/client";
 import prisma from "../config/db";
 
 
@@ -70,6 +69,8 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     next();
 
   } catch (error) {
+
+    console.log(error)
 
     if (error instanceof jwt.TokenExpiredError) {
       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token has expired" });

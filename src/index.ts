@@ -71,6 +71,7 @@ app.use(notFoundHandler);
 
 // Global Error Handler (For other errors)
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.log(err)
   const statusCode = err.status || Statuscode.INTERNAL_SERVER_ERROR;
   res.status(statusCode).json({
     message: err.message || "Server Error",

@@ -1,7 +1,7 @@
 
 /**
  * @swagger
- * /api/v1/request-ride:
+ * /api/v1/rides/request-ride:
  *   post:
  *     summary: Request a ride
  *     description: Allows a user to request a ride by providing pickup and dropoff locations.
@@ -86,7 +86,7 @@
 
 /**
  * @swagger
- * /api/v1/accept-ride:
+ * /api/v1/rides/accept-ride:
  *   post:
  *     summary: Accept a ride bid
  *     description: Allows a driver to accept a ride request bid.
@@ -134,7 +134,7 @@
 
 /**
  * @swagger
- * /api/v1/reject-ride:
+ * /api/v1/rides/reject-ride:
  *   post:
  *     summary: Reject a ride bid
  *     description: Allows a driver to reject a ride request bid.
@@ -174,7 +174,7 @@
 
 /**
  * @swagger
- * /api/v1/available:
+ * /api/v1/rides/available:
  *   get:
  *     summary: Get all available rides within a driver's location
  *     description: Retrieves a list of rides available within a specified radius from the driver's location.
@@ -234,7 +234,7 @@
 
 /**
  * @swagger
- * /api/v1/{rideId}/bids:
+ * /api/v1/rides/{rideId}/bids:
  *   get:
  *     summary: Get all bids for a specific ride
  *     description: Retrieves a list of bids placed by drivers for a specific ride request.
@@ -283,7 +283,7 @@
 
 /**
  * @swagger
- * /api/v1/{rideId}/bid:
+ * /api/v1/rides/{rideId}/bid:
  *   post:
  *     summary: Driver places a bid on a ride
  *     description: Allows a driver to place a bid for a specific ride request.
@@ -357,7 +357,7 @@
 
 /**
  * @swagger
- * /api/v1/search-available-rides:
+ * /api/v1/rides/search-available-rides:
  *   get:
  *     summary: Search for available rides within a 5km radius
  *     description: |
@@ -365,7 +365,7 @@
  *       
  *       **Example Request URL:**
  *       ```
- *       /api/v1/search-available-rides?latitude=40.712776&longitude=-74.005974
+ *       /api/v1/rides/search-available-rides?latitude=40.712776&longitude=-74.005974
  *       ```
  *     tags:
  *       - Rider
@@ -455,4 +455,215 @@
  *                 error:
  *                   type: string
  *                   example: "Internal server error"
+ */
+
+
+/**
+ * @swagger
+ * /api/v1/rides/{rideId}/bids:
+ *   get:
+ *     summary: Get all ride bids
+ *     description: Retrieves all bids for a specific ride, including driver details.
+ *     tags:
+ *       - Rider
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: rideId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the ride
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved ride bids
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     bids:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "37c4b2d3-c4f9-48f2-91b3-0d4caf65c8db"
+ *                           rideId:
+ *                             type: string
+ *                             example: "2dce68ed-d88d-48e6-855e-c96154d80100"
+ *                           driverId:
+ *                             type: string
+ *                             example: "bb42baad-021c-414c-9081-514ced7e2298"
+ *                           amount:
+ *                             type: number
+ *                             example: 10000
+ *                           status:
+ *                             type: string
+ *                             example: "online"
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           driver:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 example: "bb42baad-021c-414c-9081-514ced7e2298"
+ *                               fullName:
+ *                                 type: string
+ *                                 example: "John Doe"
+ *                               email:
+ *                                 type: string
+ *                                 example: "johndoe@gmail.com"
+ *                               phoneNumber:
+ *                                 type: string
+ *                                 example: "+2348083205205"
+ *                               onlineStatus:
+ *                                 type: string
+ *                                 example: "online"
+ *                               role:
+ *                                 type: string
+ *                                 example: "driver"
+ *                               userTimezone:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Africa/Lagos"
+ *                               country:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Nigeria"
+ *                               city:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Lagos, Ikeja"
+ *                               profileImage:
+ *                                 type: string
+ *                                 nullable: true
+ *                               averageRating:
+ *                                 type: number
+ *                                 example: 4
+ *                               totalCompletedRides:
+ *                                 type: integer
+ *                                 example: 20
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *       401:
+ *         description: Unauthorized - User must be authenticated
+ *       403:
+ *         description: Forbidden - User does not have permission
+ *       500:
+ *         description: Server error
+ */
+
+
+
+/**
+ * @swagger
+ * /api/v1/rides/{rideId}/details:
+ *   get:
+ *     summary: Get ride details
+ *     description: Retrieves details of a specific ride by its ID. Only accessible by drivers and admins.
+ *     tags:
+ *       - Rider
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: rideId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the ride
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved ride details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     ride:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           example: "a9d23f47-6437-444a-880d-26b4cf901d16"
+ *                         userId:
+ *                           type: string
+ *                           example: "cdbfbe5e-c0db-404d-9ad5-b5165bf27463"
+ *                         driverId:
+ *                           type: string
+ *                           example: "7456c238-0ec5-44ad-a10e-1691aa4beb2b"
+ *                         status:
+ *                           type: string
+ *                           example: "canceled"
+ *                         pickupLocation:
+ *                           type: string
+ *                           example: "Ikeja Lagos"
+ *                         pickupLatitude:
+ *                           type: number
+ *                           example: 6.6018
+ *                         pickupLongitude:
+ *                           type: number
+ *                           example: 3.3515
+ *                         dropoffLocation:
+ *                           type: string
+ *                           example: "Maryland, Lagos"
+ *                         dropoffLatitude:
+ *                           type: number
+ *                           example: 6.5723
+ *                         dropoffLongitude:
+ *                           type: number
+ *                           example: 3.3705
+ *                         finalFare:
+ *                           type: number
+ *                           example: 0
+ *                         userTimezone:
+ *                           type: string
+ *                           example: "Africa/Lagos"
+ *                         expiresAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2025-03-04T09:43:18.796Z"
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2025-03-04T09:28:18.880Z"
+ *       401:
+ *         description: Unauthorized - User must be authenticated
+ *       403:
+ *         description: Forbidden - User does not have permission
+ *       404:
+ *         description: Ride not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Ride not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
  */
