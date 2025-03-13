@@ -1,5 +1,6 @@
 import {
   BidStatus,
+  OnlineStatus,
   PrismaClient,
   RegistrationStatus,
   Ride,
@@ -252,7 +253,23 @@ export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
 
   return { message: "Documents updated successfully" };
 };
+export const goOnline = async(userId: string)=>{
+  const user = await prisma.user.findUnique({
+    where:{ id: userId},
+  })
+  if(!user){
+    throw new Error("User not found")
+  }
+  const updatedUser = await prisma.user.update({
+    where: {id: userId},
+    data:{
+      onlineStatus: OnlineStatus.online
+    }
+  })
 
+  return updatedUser
+
+}
 export const getDriverProfile = async (userId: string) => {
 
   const driver = await prisma.driver.findUnique({
