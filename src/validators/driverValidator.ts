@@ -262,3 +262,16 @@ export const validateDriverWallet = [
     next();
   },
 ];
+
+export const validateGoOnline = [
+  body('userId')
+    .exists().withMessage('userId is required')
+    .isUUID().withMessage('userId must be a valid UUID'),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
