@@ -60,6 +60,8 @@ export const acceptScheduledRide = async (req: Request, res: Response) => {
 
     const { rideId, driverId } = req.body;
 
+    console.log({ rideId, driverId })
+
     const driver = await prisma.rideBid.findFirst({
       where: { id: driverId },
     });
