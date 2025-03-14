@@ -5,7 +5,7 @@ import { Statuscode } from "../utils/Statuscode";
 export const scheduleRide = async (req: Request, res: Response) => {
 
   try {
-    const { 
+    const {
         riderId,
         pickupLocation,
         pickupLatitude,
@@ -16,6 +16,16 @@ export const scheduleRide = async (req: Request, res: Response) => {
         userTimezone,
         scheduledDateTime,
     } = req.body;
+
+
+    const scheduleRideExist = await prisma.scheduledRide.findMany({
+      where: { riderId }
+    });
+
+    if(scheduleRideExist && scheduleRideExist.length === 2) {
+      res.status(Statuscode.BAD_REQUEST).json({ message: "You can schedule not more than one pending ride" });
+      return;
+    }
 
     const scheduledRide = await prisma.scheduledRide.create({
       data: {
