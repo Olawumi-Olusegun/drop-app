@@ -19,7 +19,7 @@ import {
 import { Statuscode } from "../utils/Statuscode";
 import haversine from "haversine-distance";
 import prisma from "../config/db";
-import { getDriverRideHistory } from '../services/driver.service';
+import { getDriverRideHistory, goOnline } from '../services/driver.service';
 import { AuthRequest } from "../types";
 import { HttpStatusCode } from "axios";
 
@@ -101,6 +101,22 @@ export const DocumentUploadController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+export const goOnlineController = async(req: Request, res: Response)=>{
+  try{
+    const {userId} = req.body
+    const updatedUser = await goOnline(userId);
+    res.status(200).json({updatedUser})
+  }
+  catch(error:any){
+    if(error.message === "User not found"){
+      return res.status(Statuscode.NOT_FOUND).json({error: error.message})
+
+    }
+    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({error: 'Internal Server Error'})
+  }
+
+}
 
 export const getDriverProfileController = async (req: Request, res: Response) => {
   const userId = req.query.userId as string

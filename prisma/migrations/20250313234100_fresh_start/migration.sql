@@ -2,6 +2,15 @@
 CREATE TYPE "OnlineStatus" AS ENUM ('online', 'offline');
 
 -- CreateEnum
+CREATE TYPE "verificationType" AS ENUM ('NIN', 'Passport', 'IdCard');
+
+-- CreateEnum
+CREATE TYPE "RideStatus" AS ENUM ('pending', 'accepted', 'ongoing', 'completed', 'canceled');
+
+-- CreateEnum
+CREATE TYPE "BidStatus" AS ENUM ('pending', 'accepted', 'cancelled', 'rejected');
+
+-- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('rider', 'driver', 'admin');
 
 -- CreateEnum
@@ -11,13 +20,7 @@ CREATE TYPE "ModeOfRegistration" AS ENUM ('phoneNumber', 'email', 'googleId');
 CREATE TYPE "RegistrationStatus" AS ENUM ('pending', 'incomplete', 'approved', 'rejected', 'suspended');
 
 -- CreateEnum
-CREATE TYPE "verificationType" AS ENUM ('NIN', 'Passport', 'IdCard');
-
--- CreateEnum
-CREATE TYPE "RideStatus" AS ENUM ('pending', 'accepted', 'ongoing', 'completed', 'canceled');
-
--- CreateEnum
-CREATE TYPE "BidStatus" AS ENUM ('pending', 'accepted', 'cancelled', 'rejected');
+CREATE TYPE "BiddingType" AS ENUM ('instant', 'scheduled');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -73,13 +76,35 @@ CREATE TABLE "Ride" (
 );
 
 -- CreateTable
+CREATE TABLE "ScheduledRide" (
+    "id" TEXT NOT NULL,
+    "riderId" TEXT NOT NULL,
+    "driverId" TEXT,
+    "scheduledDateTime" TIMESTAMP(3) NOT NULL,
+    "pickupLocation" TEXT NOT NULL,
+    "pickupLatitude" DOUBLE PRECISION NOT NULL,
+    "pickupLongitude" DOUBLE PRECISION NOT NULL,
+    "dropoffLocation" TEXT NOT NULL,
+    "dropoffLatitude" DOUBLE PRECISION NOT NULL,
+    "dropoffLongitude" DOUBLE PRECISION NOT NULL,
+    "finalFare" DOUBLE PRECISION DEFAULT 0.0,
+    "userTimezone" TEXT NOT NULL,
+    "status" "RideStatus" NOT NULL DEFAULT 'pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ScheduledRide_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "RideBid" (
     "id" TEXT NOT NULL,
-    "rideId" TEXT NOT NULL,
+    "rideId" TEXT,
     "driverId" TEXT NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
     "status" "BidStatus" NOT NULL DEFAULT 'pending',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "biddingType" "BiddingType" NOT NULL DEFAULT 'instant',
+    "scheduledId" TEXT,
 
     CONSTRAINT "RideBid_pkey" PRIMARY KEY ("id")
 );
@@ -216,10 +241,19 @@ ALTER TABLE "Ride" ADD CONSTRAINT "Ride_userId_fkey" FOREIGN KEY ("userId") REFE
 ALTER TABLE "Ride" ADD CONSTRAINT "Ride_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RideBid" ADD CONSTRAINT "RideBid_rideId_fkey" FOREIGN KEY ("rideId") REFERENCES "Ride"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ScheduledRide" ADD CONSTRAINT "ScheduledRide_riderId_fkey" FOREIGN KEY ("riderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ScheduledRide" ADD CONSTRAINT "ScheduledRide_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RideBid" ADD CONSTRAINT "RideBid_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RideBid" ADD CONSTRAINT "RideBid_rideId_fkey" FOREIGN KEY ("rideId") REFERENCES "Ride"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RideBid" ADD CONSTRAINT "RideBid_scheduledId_fkey" FOREIGN KEY ("scheduledId") REFERENCES "ScheduledRide"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RideCancel" ADD CONSTRAINT "RideCancel_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
