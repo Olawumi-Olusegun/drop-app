@@ -1,0 +1,19 @@
+import { NextFunction, Request, Response } from "express";
+import { AuthRequest } from "../types";
+import prisma from "../config/db";
+import { RegistrationStatus } from "@prisma/client";
+import { Statuscode } from "../utils/Statuscode";
+
+
+export const rejectSuspendedDrivers = async(req: Request, res: Response, next: NextFunction)=>{
+
+    const driverId =  (req as AuthRequest).user?.driverId
+    const driver = await prisma.driver.findUnique({
+        where: {id: driverId}
+    })
+
+    if(driver?.registrationStatus == RegistrationStatus.suspended){
+        return res.status(Statuscode.FORBIDDEN).json({status: false, message: "Driver has been Suspended"})
+    }
+    next()
+}

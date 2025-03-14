@@ -9,16 +9,16 @@ import { expirationTime } from "../utils/timeExpiry";
 
 
 export const forgotPassword = async (req: Request, res: Response) => {
-  
+
   const { email, phoneNumber } = req.body;
 
   try {
 
     let user = null;
-
-    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
-
-    if (formattedPhoneNumber) {
+    let formattedPhoneNumber = null;
+    
+    if (phoneNumber) {
+      formattedPhoneNumber = formatPhoneNumber(phoneNumber);
       user = await prisma.user.findFirst({ where: { phoneNumber: formattedPhoneNumber } });
     } else if (email) {
       user = await prisma.user.findUnique({ where: { email } });
@@ -32,7 +32,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const otp = generateOTP();
 
     // Store OTP in the database
-    await prisma.oTP.upsert({
+    const otpsUps  = await prisma.oTP.upsert({
       where: { userId: user.id },
       update: { otp, expiresAt: expirationTime().toISOString() },
       create: { userId: user.id, otp, expiresAt: expirationTime().toISOString() },
@@ -50,6 +50,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     return res.status(Statuscode.SUCCESS).json({ message: "OTP sent successfully. Check your email or phone." });
   } catch (error) {
+    console.log(error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "An error occurred. Please try again later." });
   }
 };
@@ -82,7 +83,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         if (new Date(userOTP.expiresAt) < new Date()) {
           return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, request a new one" });
         }
-    
+
         // Verify OTP
         if (userOTP.otp !== otp) {
           return res.status(Statuscode.BAD_REQUEST).json({ message: "Incorrect OTP" });
