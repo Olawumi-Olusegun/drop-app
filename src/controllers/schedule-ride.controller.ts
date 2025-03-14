@@ -68,9 +68,11 @@ export const acceptScheduledRide = async (req: Request, res: Response) => {
     res.status(Statuscode.SUCCESS).json({ message: "Ride accepted", ride });
     return;
   } catch (error) {
+    console.log(error)
     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error: "Failed to accept ride" });
   }
 };
+
 
 export const cancelScheduledRide = async (req: Request, res: Response) => {
   try {
