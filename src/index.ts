@@ -9,7 +9,7 @@ import session from 'express-session';
 import authRoutes from "./routes/auth.route";
 import driverRoutes from "./routes/driver.route";
 import rideRoutes from "./routes/ride.route";
-import adminRoutes from "./routes/admin.route"
+import adminRoutes from "./routes/admin.route";
 import passportRoutes from "./routes/passport.route";
 import scheduleRideRoutes from "./routes/schedule-ride.route";
 import swaggerDocs from "./utils/swagger";
