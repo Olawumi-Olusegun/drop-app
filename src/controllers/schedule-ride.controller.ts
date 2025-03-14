@@ -1,10 +1,14 @@
 import { Request, Response } from "express";
 import prisma from "../config/db";
 import { Statuscode } from "../utils/Statuscode";
+import { AuthRequest } from "../types";
 
 export const scheduleRide = async (req: Request, res: Response) => {
 
+    const user = (req as AuthRequest)?.user;
+
   try {
+
     const {
         riderId,
         pickupLocation,
@@ -17,6 +21,17 @@ export const scheduleRide = async (req: Request, res: Response) => {
         scheduledDateTime,
     } = req.body;
 
+  
+    if(!user || !user?.userId) {
+      res.status(Statuscode.BAD_REQUEST).json({ message: "User not found" });
+      return;
+    }
+
+      
+    if(user.role !== "rider") {
+      res.status(Statuscode.BAD_REQUEST).json({ message: "Only riders can schedule ride" });
+      return;
+    }
 
     const scheduleRideExist = await prisma.scheduledRide.findMany({
       where: { riderId }
@@ -70,23 +85,14 @@ export const acceptScheduledRide = async (req: Request, res: Response) => {
 
     const { rideId, driverId } = req.body;
 
-    console.log({ rideId, driverId })
-
-    const driver = await prisma.driver.findFirst({
-      where: { id: driverId },
-    });
-
     const driverExists = await prisma.driver.findUnique({
       where: { id: driverId },
     });
-    
+
     if (!driverExists) {
       res.status(Statuscode.NOT_FOUND).json({ message: "Driver not found" });
       return;
     }
-
-    console.log("Driver Object", driver);
-    console.log("Driver ID", );
 
     const ride = await prisma.scheduledRide.update({
       where: { id: rideId },
@@ -124,6 +130,7 @@ export const cancelScheduledRide = async (req: Request, res: Response) => {
 export const placeScheduledRideBid = async (req: Request, res: Response) => {
 
     try {
+
       const { driverId, amount } = req.body;
       const { scheduledRideId } = req.params;
 
