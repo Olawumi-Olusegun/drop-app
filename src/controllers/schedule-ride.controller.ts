@@ -39,6 +39,7 @@ export const scheduleRide = async (req: Request, res: Response) => {
 };
 
 export const getScheduledRides = async (req: Request, res: Response) => {
+
   try {
     const rides = await prisma.scheduledRide.findMany({
       where: { status: "pending" },
@@ -170,7 +171,7 @@ export const placeScheduledRideBid = async (req: Request, res: Response) => {
       return res.status(Statuscode.SUCCESS).json({ bids });
     } catch (error) {
       console.error(error);
-      res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+      res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error", error });
       return;
     }
   };

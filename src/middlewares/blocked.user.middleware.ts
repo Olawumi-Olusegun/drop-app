@@ -63,6 +63,22 @@ export const rejectBlockedUsers = async (req: Request, res: Response, next: Next
 
     next();
   } catch (error) {
-    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+
+        if (error instanceof jwt.TokenExpiredError) {
+          res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token has expired" });
+          return;
+        }
+    
+        if (error instanceof jwt.JsonWebTokenError) {
+          res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
+          return;
+        }
+        if (error instanceof jwt.NotBeforeError) {
+          res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token not active yet" });
+          return;
+        }
+
+      res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+      return;
   }
 };
