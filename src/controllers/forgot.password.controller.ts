@@ -32,7 +32,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const otp = generateOTP();
 
     // Store OTP in the database
-    await prisma.oTP.upsert({
+    const otpsUps  = await prisma.oTP.upsert({
       where: { userId: user.id },
       update: { otp, expiresAt: expirationTime().toISOString() },
       create: { userId: user.id, otp, expiresAt: expirationTime().toISOString() },
@@ -83,7 +83,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         if (new Date(userOTP.expiresAt) < new Date()) {
           return res.status(Statuscode.BAD_REQUEST).json({ message: "OTP has expired, request a new one" });
         }
-    
+
         // Verify OTP
         if (userOTP.otp !== otp) {
           return res.status(Statuscode.BAD_REQUEST).json({ message: "Incorrect OTP" });
