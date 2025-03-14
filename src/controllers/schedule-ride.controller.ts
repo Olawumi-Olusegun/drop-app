@@ -62,21 +62,21 @@ export const acceptScheduledRide = async (req: Request, res: Response) => {
 
     console.log({ rideId, driverId })
 
-    const driver = await prisma.rideBid.findFirst({
+    const driver = await prisma.driver.findFirst({
       where: { id: driverId },
     });
 
     console.log("Driver Object", driver);
     console.log("Driver ID", );
 
-    if(!driver || !driver?.driverId) {
+    if(!driver || !driver?.id) {
       res.status(Statuscode.NOT_FOUND).json({ message: "Driver not found" });
       return;
     }
 
     const ride = await prisma.scheduledRide.update({
       where: { id: rideId },
-      data: { driverId: driver?.driverId, status: "accepted" },
+      data: { driverId: driver?.id, status: "accepted" },
     });
 
     res.status(Statuscode.SUCCESS).json({ message: "Ride accepted", ride });
