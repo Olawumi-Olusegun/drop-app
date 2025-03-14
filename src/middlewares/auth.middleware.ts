@@ -11,7 +11,6 @@ interface VerifyToken extends JwtPayload {
 }
 
 export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
-console.log("AUTHENTICATION")
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
