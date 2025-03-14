@@ -60,7 +60,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/", passportRoutes);
 
 
-app.use(rejectBlockedUsers)
+app.use(rejectBlockedUsers);
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
 app.use('/api/v1/admin', adminRoutes);
