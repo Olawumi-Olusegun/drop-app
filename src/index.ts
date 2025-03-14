@@ -11,6 +11,7 @@ import driverRoutes from "./routes/driver.route";
 import rideRoutes from "./routes/ride.route";
 import adminRoutes from "./routes/admin.route"
 import passportRoutes from "./routes/passport.route";
+import scheduleRideRoutes from "./routes/schedule-ride.route";
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
@@ -62,8 +63,8 @@ app.use("/", passportRoutes);
 app.use(rejectBlockedUsers)
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
-app.use('/api/v1/admin', adminRoutes)
-
+app.use('/api/v1/admin', adminRoutes);
+app.use("/api/v1/scheduled-rides", scheduleRideRoutes);
 
 
 // Catch-all middleware for 404 routes

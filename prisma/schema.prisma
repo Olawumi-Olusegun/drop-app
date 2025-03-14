@@ -40,6 +40,9 @@ model User {
   ridesAsUser           Ride[]             @relation(name: "UserRides")
   rideCancellations     RideCancel[]
   userRatings           UserRating[]       @relation("UserRatings")
+
+  scheduledRidesAsUser   ScheduledRide[] @relation(name: "UserScheduledRides")
+  scheduledRidesAsDriver ScheduledRide[] @relation(name: "DriverScheduledRides")
 }
 
 model Ride {
@@ -64,16 +67,41 @@ model Ride {
   driver Driver? @relation(name: "DriverRides", fields: [driverId], references: [id])
 }
 
-model RideBid {
-  id        String    @id @default(uuid())
-  rideId    String
-  driverId  String
-  amount    Float
-  status    BidStatus @default(pending)
-  createdAt DateTime  @default(now())
+model ScheduledRide {
+  id                String    @id @default(uuid())
+  riderId           String
+  driverId          String?
+  scheduledDateTime DateTime
+  pickupLocation    String
+  pickupLatitude    Float
+  pickupLongitude   Float
+  dropoffLocation   String
+  dropoffLatitude   Float
+  dropoffLongitude  Float
+  finalFare         Float?    @default(0.0)
+  userTimezone      String
+  bids              RideBid[]
 
-  ride   Ride   @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  status    RideStatus @default(pending)
+  createdAt DateTime   @default(now())
+
+  user   User  @relation(fields: [riderId], references: [id], name: "UserScheduledRides")
+  driver User? @relation(fields: [driverId], references: [id], name: "DriverScheduledRides")
+}
+
+model RideBid {
+  id          String      @id @default(uuid())
+  rideId      String?
+  driverId    String
+  amount      Float
+  status      BidStatus   @default(pending)
+  createdAt   DateTime    @default(now())
+  biddingType BiddingType @default(instant)
+  scheduledId String?
+
+  driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  ride          Ride?          @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  scheduledRide ScheduledRide? @relation(fields: [scheduledId], references: [id], onDelete: Cascade)
 }
 
 model RideCancel {
@@ -94,23 +122,6 @@ model OTP {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-}
-
-enum OnlineStatus {
-  online
-  offline
-}
-
-enum UserRole {
-  rider
-  driver
-  admin
-}
-
-enum ModeOfRegistration {
-  phoneNumber
-  email
-  googleId
 }
 
 model Driver {
@@ -138,14 +149,6 @@ model Driver {
   ridesAsDriver   Ride[]                 @relation(name: "DriverRides")
   rideBids        RideBid[]
   DriverWallet    DriverWallet[]
-}
-
-enum RegistrationStatus {
-  pending
-  incomplete
-  approved
-  rejected
-  suspended
 }
 
 model DriverIdentification {
@@ -218,4 +221,34 @@ enum BidStatus {
   accepted
   cancelled
   rejected
+}
+
+enum UserRole {
+  rider
+  driver
+  admin
+}
+
+enum ModeOfRegistration {
+  phoneNumber
+  email
+  googleId
+}
+
+enum RegistrationStatus {
+  pending
+  incomplete
+  approved
+  rejected
+  suspended
+}
+
+enum BiddingType {
+  instant
+  scheduled
+}
+
+enum OnlineStatus {
+  online
+  offline
 }
