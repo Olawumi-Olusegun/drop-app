@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import prisma from "../config/db";
 import { Statuscode } from "../utils/Statuscode";
+import { AuthRequest } from "../types";
 
 export const scheduleRide = async (req: Request, res: Response) => {
 
+    const user = (req as AuthRequest)?.user;
+
   try {
-    const { 
+
+    const {
         riderId,
         pickupLocation,
         pickupLatitude,
@@ -16,6 +20,26 @@ export const scheduleRide = async (req: Request, res: Response) => {
         userTimezone,
         scheduledDateTime,
     } = req.body;
+
+  
+    if(!user || !user?.userId) {
+      res.status(Statuscode.BAD_REQUEST).json({ message: "User not found" });
+      return;
+    }
+
+    if(user.role !== "rider") {
+      res.status(Statuscode.BAD_REQUEST).json({ message: "Only riders can schedule ride" });
+      return;
+    }
+
+    const scheduleRideExist = await prisma.scheduledRide.findMany({
+      where: { riderId }
+    });
+
+    if(scheduleRideExist && scheduleRideExist.length === 2) {
+      res.status(Statuscode.BAD_REQUEST).json({ message: "You can schedule not more than one pending ride" });
+      return;
+    }
 
     const scheduledRide = await prisma.scheduledRide.create({
       data: {
@@ -39,6 +63,7 @@ export const scheduleRide = async (req: Request, res: Response) => {
 };
 
 export const getScheduledRides = async (req: Request, res: Response) => {
+
   try {
     const rides = await prisma.scheduledRide.findMany({
       where: { status: "pending" },
@@ -59,17 +84,29 @@ export const acceptScheduledRide = async (req: Request, res: Response) => {
 
     const { rideId, driverId } = req.body;
 
+    const driverExists = await prisma.driver.findUnique({
+      where: { id: driverId },
+    });
+
+    if (!driverExists) {
+      res.status(Statuscode.NOT_FOUND).json({ message: "Driver not found" });
+      return;
+    }
+
     const ride = await prisma.scheduledRide.update({
       where: { id: rideId },
-      data: { driverId, status: "accepted" },
+      data: { driverId: driverExists?.id, status: "accepted" },
     });
 
     res.status(Statuscode.SUCCESS).json({ message: "Ride accepted", ride });
     return;
   } catch (error) {
+    console.log(error)
     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error: "Failed to accept ride" });
+    return;
   }
 };
+
 
 export const cancelScheduledRide = async (req: Request, res: Response) => {
   try {
@@ -92,6 +129,7 @@ export const cancelScheduledRide = async (req: Request, res: Response) => {
 export const placeScheduledRideBid = async (req: Request, res: Response) => {
 
     try {
+
       const { driverId, amount } = req.body;
       const { scheduledRideId } = req.params;
 
@@ -170,7 +208,7 @@ export const placeScheduledRideBid = async (req: Request, res: Response) => {
       return res.status(Statuscode.SUCCESS).json({ bids });
     } catch (error) {
       console.error(error);
-      res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+      res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error", error });
       return;
     }
   };

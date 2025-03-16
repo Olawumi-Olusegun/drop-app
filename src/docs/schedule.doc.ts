@@ -40,7 +40,7 @@
 
 /**
  * @swagger
- * /api/v1/scheduled-rides/schedule:
+ * /api/v1/scheduled-rides:
  *   post:
  *     summary: Schedule a new ride
  *     tags:

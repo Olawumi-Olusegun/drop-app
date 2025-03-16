@@ -1,254 +1,254 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 model User {
-  id                    String             @id @default(uuid())
-  fullName              String?
-  password              String?
-  email                 String?            @unique
-  phoneNumber           String?            @unique
-  googleId              String?            @unique
-  isPhoneNumberVerified Boolean            @default(false)
-  homeAddress           String?
-  longitude             Float?
-  latitude              Float?
-  isEmailVerified       Boolean            @default(false)
-  isNotification        Boolean            @default(false)
-  isBlocked             Boolean            @default(false)
-  onlineStatus          OnlineStatus
-  role                  UserRole
-  modeOfRegistration    ModeOfRegistration
-  userTimezone          String?
-  country               String?
-  city                  String?
-  refreshToken          String?
-  accessToken           String?
-  profileImage          String?
-  isUserVerified        Boolean            @default(false)
-  averageRating         Float              @default(0.0)
-  totalCompletedRides   Int                @default(0)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  otp                   OTP?
-  Driver                Driver?
-  ridesAsUser           Ride[]             @relation(name: "UserRides")
-  rideCancellations     RideCancel[]
-  userRatings           UserRating[]       @relation("UserRatings")
+    id                    String             @id @default(uuid())
+    fullName              String?
+    password              String?
+    email                 String?            @unique
+    phoneNumber           String?            @unique
+    googleId              String?            @unique
+    isPhoneNumberVerified Boolean            @default(false)
+    homeAddress           String?
+    longitude             Float?
+    latitude              Float?
+    isEmailVerified       Boolean            @default(false)
+    isNotification        Boolean            @default(false)
+    isBlocked             Boolean            @default(false)
+    onlineStatus          OnlineStatus
+    role                  UserRole
+    modeOfRegistration    ModeOfRegistration
+    userTimezone          String?
+    country               String?
+    city                  String?
+    refreshToken          String?
+    accessToken           String?
+    profileImage          String?
+    isUserVerified        Boolean            @default(false)
+    averageRating         Float              @default(0.0)
+    totalCompletedRides   Int                @default(0)
+    createdAt             DateTime           @default(now())
+    updatedAt             DateTime           @updatedAt
+    otp                   OTP?
+    Driver                Driver?
+    ridesAsUser           Ride[]             @relation(name: "UserRides")
+    rideCancellations     RideCancel[]
+    userRatings           UserRating[]       @relation("UserRatings")
 
-  scheduledRidesAsUser   ScheduledRide[] @relation(name: "UserScheduledRides")
-  scheduledRidesAsDriver ScheduledRide[] @relation(name: "DriverScheduledRides")
+    scheduledRidesAsUser ScheduledRide[] @relation(name: "UserScheduledRides")
 }
 
 model Ride {
-  id               String       @id @default(uuid())
-  userId           String
-  driverId         String? // Optional field
-  status           RideStatus   @default(pending)
-  bids             RideBid[]
-  cancellations    RideCancel[]
-  pickupLocation   String
-  pickupLatitude   Float
-  pickupLongitude  Float
-  dropoffLocation  String
-  dropoffLatitude  Float
-  dropoffLongitude Float
-  finalFare        Float?       @default(0.0)
-  userTimezone     String
-  expiresAt        DateTime?
-  createdAt        DateTime     @default(now())
+    id               String       @id @default(uuid())
+    userId           String
+    driverId         String?
+    status           RideStatus   @default(pending)
+    bids             RideBid[]
+    cancellations    RideCancel[]
+    pickupLocation   String
+    pickupLatitude   Float
+    pickupLongitude  Float
+    dropoffLocation  String
+    dropoffLatitude  Float
+    dropoffLongitude Float
+    finalFare        Float?       @default(0.0)
+    userTimezone     String
+    expiresAt        DateTime?
+    createdAt        DateTime     @default(now())
 
-  user   User    @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
-  driver Driver? @relation(name: "DriverRides", fields: [driverId], references: [id])
+    user   User    @relation(name: "UserRides", fields: [userId], references: [id], onDelete: Cascade)
+    driver Driver? @relation(name: "DriverRides", fields: [driverId], references: [id])
 }
 
 model ScheduledRide {
-  id                String    @id @default(uuid())
-  riderId           String
-  driverId          String?
-  scheduledDateTime DateTime
-  pickupLocation    String
-  pickupLatitude    Float
-  pickupLongitude   Float
-  dropoffLocation   String
-  dropoffLatitude   Float
-  dropoffLongitude  Float
-  finalFare         Float?    @default(0.0)
-  userTimezone      String
-  bids              RideBid[]
+    id                String    @id @default(uuid())
+    riderId           String
+    driverId          String?
+    scheduledDateTime DateTime
+    pickupLocation    String
+    pickupLatitude    Float
+    pickupLongitude   Float
+    dropoffLocation   String
+    dropoffLatitude   Float
+    dropoffLongitude  Float
+    finalFare         Float?    @default(0.0)
+    userTimezone      String
+    bids              RideBid[]
 
-  status    RideStatus @default(pending)
-  createdAt DateTime   @default(now())
+    status    RideStatus @default(pending)
+    createdAt DateTime   @default(now())
 
-  user   User  @relation(fields: [riderId], references: [id], name: "UserScheduledRides")
-  driver User? @relation(fields: [driverId], references: [id], name: "DriverScheduledRides")
+    user   User    @relation(fields: [riderId], references: [id], name: "UserScheduledRides")
+    driver Driver? @relation(fields: [driverId], references: [id], name: "DriverScheduledRides")
 }
 
 model RideBid {
-  id          String      @id @default(uuid())
-  rideId      String?
-  driverId    String
-  amount      Float
-  status      BidStatus   @default(pending)
-  createdAt   DateTime    @default(now())
-  biddingType BiddingType @default(instant)
-  scheduledId String?
+    id          String      @id @default(uuid())
+    rideId      String?
+    driverId    String
+    amount      Float
+    status      BidStatus   @default(pending)
+    createdAt   DateTime    @default(now())
+    biddingType BiddingType @default(instant)
+    scheduledId String?
 
-  driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  ride          Ride?          @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  scheduledRide ScheduledRide? @relation(fields: [scheduledId], references: [id], onDelete: Cascade)
+    driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Cascade)
+    ride          Ride?          @relation(fields: [rideId], references: [id], onDelete: Cascade)
+    scheduledRide ScheduledRide? @relation(fields: [scheduledId], references: [id], onDelete: Cascade)
 }
 
 model RideCancel {
-  id        String   @id @default(uuid())
-  userId    String
-  rideId    String
-  reason    String
-  createdAt DateTime @default(now())
+    id        String   @id @default(uuid())
+    userId    String
+    rideId    String
+    reason    String
+    createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
 }
 
 model OTP {
-  id        String   @id @default(uuid())
-  otp       String
-  expiresAt DateTime
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+    id        String   @id @default(uuid())
+    otp       String
+    expiresAt DateTime
+    userId    String   @unique
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt DateTime @default(now())
 }
 
 model Driver {
-  id                  String             @id @default(uuid())
-  userId              String             @unique
-  firstName           String
-  middleName          String?
-  lastName            String
-  nationality         String
-  dateOfBirth         DateTime
-  fullAddress         String
-  city                String
-  postalCode          String
-  country             String
-  totalCompletedRides Int                @default(0)
-  averageRating       Float              @default(0.0)
-  registrationStatus  RegistrationStatus
-  registrationDate    DateTime           @default(now())
-  approvalDate        DateTime?
-  approvedBy          String?
+    id                  String             @id @default(uuid())
+    userId              String             @unique
+    firstName           String
+    middleName          String?
+    lastName            String
+    nationality         String
+    dateOfBirth         DateTime
+    fullAddress         String
+    city                String
+    postalCode          String
+    country             String
+    totalCompletedRides Int                @default(0)
+    averageRating       Float              @default(0.0)
+    registrationStatus  RegistrationStatus
+    registrationDate    DateTime           @default(now())
+    approvalDate        DateTime?
+    approvedBy          String?
 
-  user            User                   @relation(fields: [userId], references: [id])
-  identifications DriverIdentification[]
-  vehicles        DriverVehicle[]
-  ridesAsDriver   Ride[]                 @relation(name: "DriverRides")
-  rideBids        RideBid[]
-  DriverWallet    DriverWallet[]
+    user            User                   @relation(fields: [userId], references: [id])
+    identifications DriverIdentification[]
+    vehicles        DriverVehicle[]
+    ridesAsDriver   Ride[]                 @relation(name: "DriverRides")
+    rideBids        RideBid[]
+    DriverWallet    DriverWallet[]
+    scheduledRides  ScheduledRide[]        @relation(name: "DriverScheduledRides")
 }
 
 model DriverIdentification {
-  id                   String           @id @default(uuid())
-  driverId             String           @unique
-  issuingCountry       String
-  documentType         verificationType
-  nin                  String?
-  passportPhotoUrl     String?
-  idCardFrontUrl       String?
-  idCardBackUrl        String?
-  licenseNumber        String
-  licenseExpiryDate    String
-  licensePhotoUrl      String
-  selfieWithLicenseUrl String
-  driver               Driver           @relation(fields: [driverId], references: [id])
+    id                   String           @id @default(uuid())
+    driverId             String           @unique
+    issuingCountry       String
+    documentType         verificationType
+    nin                  String?
+    passportPhotoUrl     String?
+    idCardFrontUrl       String?
+    idCardBackUrl        String?
+    licenseNumber        String
+    licenseExpiryDate    String
+    licensePhotoUrl      String
+    selfieWithLicenseUrl String
+    driver               Driver           @relation(fields: [driverId], references: [id])
 }
 
 enum verificationType {
-  NIN
-  Passport
-  IdCard
+    NIN
+    Passport
+    IdCard
 }
 
 model DriverVehicle {
-  id                  String  @id @default(uuid())
-  driverId            String  @unique
-  carBrand            String
-  carModel            String
-  licensePlateNumber  String
-  carColor            String
-  carPictureUrl       String?
-  vehicleRegistration String
-  roadWorthiness      String?
+    id                  String  @id @default(uuid())
+    driverId            String  @unique
+    carBrand            String
+    carModel            String
+    licensePlateNumber  String
+    carColor            String
+    carPictureUrl       String?
+    vehicleRegistration String
+    roadWorthiness      String?
 
-  driver Driver @relation(fields: [driverId], references: [id])
+    driver Driver @relation(fields: [driverId], references: [id])
 }
 
 model DriverWallet {
-  id        String   @id @default(uuid())
-  driverId  String   @unique
-  balance   Float    @default(0.0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    id        String   @id @default(uuid())
+    driverId  String   @unique
+    balance   Float    @default(0.0)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  driver Driver @relation(fields: [driverId], references: [id])
+    driver Driver @relation(fields: [driverId], references: [id])
 }
 
 model UserRating {
-  id        String   @id @default(uuid())
-  userId    String
-  driverId  String
-  rating    Float
-  comment   String?
-  createdAt DateTime @default(now())
+    id        String   @id @default(uuid())
+    userId    String
+    driverId  String
+    rating    Float
+    comment   String?
+    createdAt DateTime @default(now())
 
-  user User @relation("UserRatings", fields: [userId], references: [id], onDelete: Cascade)
+    user User @relation("UserRatings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum RideStatus {
-  pending
-  accepted
-  ongoing
-  completed
-  canceled
+    pending
+    accepted
+    ongoing
+    completed
+    canceled
 }
 
 enum BidStatus {
-  pending
-  accepted
-  cancelled
-  rejected
+    pending
+    accepted
+    cancelled
+    rejected
 }
 
 enum UserRole {
-  rider
-  driver
-  admin
+    rider
+    driver
+    admin
 }
 
 enum ModeOfRegistration {
-  phoneNumber
-  email
-  googleId
+    phoneNumber
+    email
+    googleId
 }
 
 enum RegistrationStatus {
-  pending
-  incomplete
-  approved
-  rejected
-  suspended
+    pending
+    incomplete
+    approved
+    rejected
+    suspended
 }
 
 enum BiddingType {
-  instant
-  scheduled
+    instant
+    scheduled
 }
 
 enum OnlineStatus {
-  online
-  offline
+    online
+    offline
 }
