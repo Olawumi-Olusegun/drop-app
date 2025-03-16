@@ -11,7 +11,6 @@ interface VerifyToken extends JwtPayload {
 }
 
 export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
-
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -69,7 +68,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     next();
 
   } catch (error) {
-
+    console.log("ERROR")
     console.log(error)
 
     if (error instanceof jwt.TokenExpiredError) {
@@ -86,7 +85,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error", error });
     return;
   }
 };

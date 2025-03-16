@@ -8,7 +8,7 @@ import { UserRole } from "../types";
 const router = express.Router();
 
 router.get("/", authenticateUser, getScheduledRides);
-router.post("/schedule", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.ADMIN]), validatescheduleRide, validateRequest, scheduleRide);
+router.post("/", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.ADMIN]), validatescheduleRide, validateRequest, scheduleRide);
 router.post("/accept", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.DRIVER, UserRole.ADMIN]), acceptScheduledRide);
 router.get("/:scheduledRideId/bids", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.DRIVER, UserRole.ADMIN]), getScheduledRideBids);
 router.post("/:scheduledRideId/bids", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.DRIVER, UserRole.ADMIN]), validatescheduleRideBid, validateRequest,  placeScheduledRideBid);
