@@ -18,6 +18,7 @@ import { Statuscode } from "./utils/Statuscode";
 import passport from "passport";
 import prisma from "./config/db";
 import { rejectBlockedUsers } from "./middlewares/blocked.user.middleware";
+import { startCronJob } from "./utils/cronJob";
 
 
 // Load the correct environment file based on NODE_ENV
@@ -54,6 +55,8 @@ app.use(
 app.use(cookieParser());
 swaggerDocs(app, PORT);
 
+
+
 // API Routes
 app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'OK' }));
 app.use("/api/v1/auth", authRoutes);
@@ -83,6 +86,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startCronJob({});
 });
 
 process.on("SIGTERM", async () => {

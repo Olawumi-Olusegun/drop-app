@@ -27,7 +27,6 @@ export const scheduleRide = async (req: Request, res: Response) => {
       return;
     }
 
-      
     if(user.role !== "rider") {
       res.status(Statuscode.BAD_REQUEST).json({ message: "Only riders can schedule ride" });
       return;
