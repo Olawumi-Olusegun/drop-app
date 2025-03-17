@@ -4,12 +4,12 @@ import { Statuscode } from "../utils/Statuscode";
 import { expirationTime } from "../utils/timeExpiry";
 import { AuthRequest } from "../types";
 import haversineDistance from "haversine-distance";
-import { Prisma } from "@prisma/client";
+import { ActivityType, Prisma } from "@prisma/client";
 
 
 export const requestRide = async (req: Request, res: Response) => {
 
-  const userId = (req as AuthRequest).user?.userId as string;
+  const userRequest = (req as AuthRequest)?.user;
 
     const {  
       riderId, 
@@ -30,7 +30,7 @@ export const requestRide = async (req: Request, res: Response) => {
         where: { id: riderId }
       });
   
-      if (!user || !userId || userId !== user.id) {
+      if (!user || !userRequest?.userId || userRequest?.userId !== user.id) {
         res.status(404).json({ message: "User not found" });
         return 
       }
@@ -39,6 +39,8 @@ export const requestRide = async (req: Request, res: Response) => {
         res.status(Statuscode.FORBIDDEN).json({ message: "Your role cannot request a ride" });
         return 
       }
+
+
 
   // Create a new ride request
     const ride = await prisma.ride.create({
@@ -57,6 +59,19 @@ export const requestRide = async (req: Request, res: Response) => {
         driverId: null,
       },
     });
+
+    const activityData = {
+      userId: user.id,
+      rideId: ride.id,
+      driverId: null,
+      activityType: ActivityType.ride_requested,
+      description: "",
+      subDescription: "",
+    }
+
+    const activities = await prisma.activityLog.create({
+      data: { ...activityData },
+  });
   
      res.status(Statuscode.CREATED).json({
        message: "Ride request created successfully",
@@ -121,6 +136,45 @@ export const cancelRide = async (req: Request, res: Response) => {
         console.error(error);
         return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
       }
+    };
+
+  export const getRecentActivities = async (req: Request, res: Response) => {
+
+    try {
+
+        const {  rideId } = req.params;
+
+        const { activityType = "ride" } = req.query;
+
+        const user = (req.user as AuthRequest)?.user;
+
+        if(!user || !user.userId) {
+          return;
+        }
+
+        // Check if ride exists
+        let userActivities = await prisma.ride.findMany({ where: { userId: user.userId} });
+  
+        if (!userActivities) {
+          return res.status(Statuscode.NOT_FOUND).json({ message: "No recent activity yet" });
+        }
+
+        if(activityType === "ride") {
+
+          await prisma.ride.findMany({ where: { userId: user.userId} });
+  
+          if (!userActivities) {
+            return res.status(Statuscode.NOT_FOUND).json({ message: "Ride not found" });
+          }
+
+        }
+
+        return res.status(Statuscode.CREATED).json({ success: true, data: { userActivities } });
+      } catch (error) {
+        console.error(error);
+        return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+      }
+
     };
   
 
@@ -314,6 +368,8 @@ export const placeBid = async (req: Request, res: Response) => {
 
   const { rideId, driverId, amount } = req.body;
 
+  const user = (req.user as AuthRequest)?.user;
+
   try {
 
     // Check if the ride exists
@@ -344,6 +400,35 @@ export const placeBid = async (req: Request, res: Response) => {
     const bid = await prisma.rideBid.create({
       data: { rideId, driverId, amount: parseFloat(amount) },
     });
+
+    const activityExist = await prisma.activityLog.findFirst({
+      where: { rideId }
+    })
+
+    // Fetch activity logs based on user role
+      const whereClause = {
+        ...(user?.role === "rider" && { riderId: ride.userId }),
+        ...(user?.role === "driver" && { driverId })
+      }
+
+      await prisma.activityLog.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+    const activityData = {
+      driverId,
+      activityType: ActivityType.bid_placed,
+      description: "",
+      subDescription: "",
+    }
+
+    // rideId, driverId, amount
+    const updatedActivity = await prisma.activityLog.update({
+      where: { id: activityExist?.id },
+      data: {...activityData }
+    })
 
     return res.status(Statuscode.CREATED).json({ success: true, data: { bid } });
 
