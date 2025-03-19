@@ -15,6 +15,7 @@ import {
     goOnlineController,
     rateUserController,
     registerDriverController,
+    requestWithdrawalController,
     startRideController,
 } from "../controllers/driver.controller";
 import { updateDriverDocuments } from "../services/driver.service";
@@ -34,6 +35,7 @@ import {
     validateRideIdParam,
     validateStartRide,
     validateUpdateDriverDocuments,
+    validateWithdrawalRequest,
 } from "../validators/driverValidator";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
 import { UserRole } from "@prisma/client";
@@ -63,4 +65,5 @@ router.post("/:rideId/complete", authenticateUser, rejectSuspendedDrivers,valida
 router.post("/:userId/rate", authenticateUser, rejectSuspendedDrivers,validateRateUser, rateUserController);
 router.get("/rides", authenticateUser, rejectSuspendedDrivers,validateDriverRideHistory, getDriverRideHistoryController);
 router.get('/wallet', authenticateUser, rejectSuspendedDrivers,validateDriverWallet, getDriverWalletController)
+router.post('/request-withdrawal', authenticateUser, rejectSuspendedDrivers, validateWithdrawalRequest,requestWithdrawalController)
 export default router;

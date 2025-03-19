@@ -278,3 +278,18 @@ export const validateGoOnline = [
     next();
   },
 ];
+
+
+export const validateWithdrawalRequest = [
+  body('userId')
+    .exists().withMessage('userId is required')
+    .isUUID().withMessage('userId must be a valid UUID'),
+  body('amount')
+    .exists().withMessage('amount is required')
+    .isFloat({ gt: 0 }).withMessage('amount must be a positive number'),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    next();
+  },
+];
