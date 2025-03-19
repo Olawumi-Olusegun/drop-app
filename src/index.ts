@@ -12,6 +12,7 @@ import rideRoutes from "./routes/ride.route";
 import adminRoutes from "./routes/admin.route";
 import passportRoutes from "./routes/passport.route";
 import scheduleRideRoutes from "./routes/schedule-ride.route";
+import userRoutes from "./routes/user.route"
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
@@ -68,6 +69,7 @@ app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use("/api/v1/scheduled-rides", scheduleRideRoutes);
+app.use('/api/v1/users', userRoutes)
 
 
 // Catch-all middleware for 404 routes

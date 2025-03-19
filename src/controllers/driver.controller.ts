@@ -328,13 +328,14 @@ export const startRideController = async (req: Request, res: Response) => {
 export const completeRideController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
-    const { driverId } = req.body;
-    const driver = (req as AuthRequest).user?.driverId
+    const { driverId, paymentMethod} = req.body;
+    const driver = (req as AuthRequest).user.driverId
+    const user = (req as AuthRequest).user.userId
     if (driverId !== driver) {
       throw new Error("Invalid Access")
     }
     const finalFare = req.body.finalFare as string
-    const updatedRide = await completeRide(rideId, driverId, finalFare);
+    const updatedRide = await completeRide(rideId, driverId, finalFare, user,paymentMethod);
     res.status(200).json(updatedRide);
   } catch (error: any) {
     if (error.message == "Ride not found") {
@@ -349,6 +350,8 @@ export const completeRideController = async (req: Request, res: Response) => {
     if (error.message === "Invalid Access") {
       return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
     }
+
+    console.log(error.message)
     res.status(500).json({ error: "Internal server error" });
   }
 };

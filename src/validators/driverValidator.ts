@@ -206,6 +206,9 @@ export const validateCompleteRide = [
     .isUUID().withMessage('driverId must be a valid UUID'),
   body('finalFare')
     .exists().withMessage('finalFare is required'),
+  body('paymentMethod')
+  .exists().withMessage('paymentMethod is required')
+  .isIn(['cash', 'card']).withMessage('paymentMethod must either be cash or card'),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
