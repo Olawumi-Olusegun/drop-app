@@ -31,12 +31,40 @@ export const getAllUsers = async (req: Request, res: Response) => {
 export const getUser = async (req: Request, res: Response) => {
   try {
     const userId = req.query.userId as string;
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        fullName:  true,
+        email:  true,
+        phoneNumber:  true,
+        isPhoneNumberVerified: true,
+        homeAddress:  true,
+        longitude:  true,
+        latitude:  true,
+        isEmailVerified: true,
+        isNotification:  true,
+        isBlocked:  true,
+        onlineStatus: true,
+        role:  true,
+        modeOfRegistration: true,
+        userTimezone:  true,
+        country:  true,
+        city:  true,
+        profileImage:  true,
+        isUserVerified: true,
+        averageRating:  true,
+        totalCompletedRides:  true,
+        createdAt:  true,
+        updatedAt:  true,
+      }
     });
+
     if (!user) {
       return res.status(Statuscode.NOT_FOUND).json({ error: "User not found" });
     }
+
     res.status(Statuscode.SUCCESS).json(user);
   } catch (error) {
     res
@@ -54,6 +82,31 @@ export const getAllDrivers = async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
     const drivers = await prisma.user.findMany({
       where: { role: UserRole.driver },
+      select: {
+        id: true,
+        fullName:  true,
+        email:  true,
+        phoneNumber:  true,
+        isPhoneNumberVerified: true,
+        homeAddress:  true,
+        longitude:  true,
+        latitude:  true,
+        isEmailVerified: true,
+        isNotification:  true,
+        isBlocked:  true,
+        onlineStatus: true,
+        role:  true,
+        modeOfRegistration: true,
+        userTimezone:  true,
+        country:  true,
+        city:  true,
+        profileImage:  true,
+        isUserVerified: true,
+        averageRating:  true,
+        totalCompletedRides:  true,
+        createdAt:  true,
+        updatedAt:  true,
+      },
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
@@ -71,12 +124,10 @@ export const getDriver = async (req: Request, res: Response) => {
   try {
     const driverId = req.query.driverId as string;
     const driver = await prisma.driver.findUnique({
-      where: {
-        id: driverId,
-        
-      },
+      where: { id: driverId, },
       include: { identifications: true, vehicles: true}
     });
+  
     if (!driver) {
       return res.status(Statuscode.NOT_FOUND).json({ error: "User not found" });
     }
@@ -114,9 +165,32 @@ export const approveDriver = async (req: Request, res: Response) => {
 
     await prisma.user.update({
       where: { id: updatedDriver.userId },
-      data: {
-        role: UserRole.driver,
-      },
+      data: { role: UserRole.driver, },
+      select: {
+        id: true,
+        fullName:  true,
+        email:  true,
+        phoneNumber:  true,
+        isPhoneNumberVerified: true,
+        homeAddress:  true,
+        longitude:  true,
+        latitude:  true,
+        isEmailVerified: true,
+        isNotification:  true,
+        isBlocked:  true,
+        onlineStatus: true,
+        role:  true,
+        modeOfRegistration: true,
+        userTimezone:  true,
+        country:  true,
+        city:  true,
+        profileImage:  true,
+        isUserVerified: true,
+        averageRating:  true,
+        totalCompletedRides:  true,
+        createdAt:  true,
+        updatedAt:  true,
+      }
     });
 
     res.status(Statuscode.SUCCESS).json({ updatedDriver });
@@ -159,7 +233,35 @@ export const getAllPendingDrivers = async (req: Request, res: Response) => {
   try {
     const pendingDrivers = await prisma.driver.findMany({
       where: { registrationStatus: RegistrationStatus.pending },
-      include: { user: true },
+      include: { 
+        user: {
+          select: {
+            id: true,
+            fullName:  true,
+            email:  true,
+            phoneNumber:  true,
+            isPhoneNumberVerified: true,
+            homeAddress:  true,
+            longitude:  true,
+            latitude:  true,
+            isEmailVerified: true,
+            isNotification:  true,
+            isBlocked:  true,
+            onlineStatus: true,
+            role:  true,
+            modeOfRegistration: true,
+            userTimezone:  true,
+            country:  true,
+            city:  true,
+            profileImage:  true,
+            isUserVerified: true,
+            averageRating:  true,
+            totalCompletedRides:  true,
+            createdAt:  true,
+            updatedAt:  true,
+          }
+        }
+      },
     });
 
     res.status(Statuscode.SUCCESS).json(pendingDrivers);
