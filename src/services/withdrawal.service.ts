@@ -5,6 +5,14 @@ import { publishToQueue } from "../jobs/rabbbitMqJob";
 
 
 export const requestWithdrawal = async (userId: string, amount: number) =>{
+
+    const bankexists = await prisma.bankDetail.findUnique({
+        where: {userId: userId}
+    })
+
+    if(!bankexists){
+        throw new Error("User has no saved bank ")
+    }
     const withdrawal = await prisma.$transaction(async (tx)=>{
 
         const wallet = await tx.wallet.findUnique({where: {userId}});
@@ -42,7 +50,7 @@ export const processWithdrawal = async(withdrawalId: string)=>{
         }
     })
     if(!withdrawal) throw new Error("Withdrawal not found")
-    if(withdrawal.status!== WithdrawalStatus.pending ) throw new Error("Withdrawal already processed")
+    if(withdrawal.status== WithdrawalStatus.completed ) throw new Error("Withdrawal already processed")
     const bankDetails = await prisma.bankDetail.findUnique({
     
         where: {userId: withdrawal.user.id}
