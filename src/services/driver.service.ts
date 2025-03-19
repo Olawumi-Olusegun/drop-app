@@ -3,6 +3,7 @@ import {
   OnlineStatus,
   PaymentMethod,
   PaymentStatus,
+  Prisma,
   PrismaClient,
   RegistrationStatus,
   Ride,
@@ -17,6 +18,8 @@ import { Response } from "express";
 import haversine from "haversine-distance";
 import { COMMISION_RATE } from '../constants';
 import { chargeSavedCard } from "../utils/paystackhelpers";
+import { publishToQueue } from "../jobs/rabbbitMqJob";
+
 const prisma = new PrismaClient();
 
 export const getAvailableDrivers = async (
@@ -481,68 +484,57 @@ export const startRide = async (
   });
 
   return updatedRide;
+
+
 };
+
+
+
+
 
 export const completeRide = async (
   rideId: string,
   driverId: string,
+
   finalFare: string,
   userId: string,
-  paymentMethod: PaymentMethod,
+  paymentMethod: PaymentMethod
 ) => {
- 
-  const fare = parseFloat(finalFare);
-  const netAmount = fare * (1 - COMMISION_RATE);
-  
+  const finalFareAmount = parseFloat(finalFare);
+  const netAmount = finalFareAmount * (1 - COMMISION_RATE);
   const reference = `ride-${rideId}-${Date.now()}`;
 
-  // Wrap all operations in a transaction
-  const updatedRide = await prisma.$transaction(async (tx) => {
-    
+  // Wrap critical operations in one transaction and return needed rider details.
+  const { rideUpdate, riderEmail, riderId } = await prisma.$transaction(async (tx) => {
     const ride = await tx.ride.findUnique({
       where: { id: rideId },
-      include: { user: { select: { email: true, savedCardAuthCode: true } } },
-      
+      include: { user: { select: { id: true, email: true, savedCardAuthCode: true } } },
     });
     if (!ride) throw new Error("Ride not found");
     if (ride.status !== RideStatus.ongoing) throw new Error("Ride is not in progress");
     if (ride.driverId !== driverId) throw new Error("Driver is not authorized to complete this ride");
 
+    // Update the ride to completed.
     const rideUpdate = await tx.ride.update({
       where: { id: rideId },
-      data: { finalFare: fare, status: RideStatus.completed },
+      data: { finalFare: finalFareAmount, status: RideStatus.completed },
     });
 
-    let paymentStatus
-    let chargeSuccessful = false;
-    
-    if (paymentMethod === PaymentMethod.card) {
-      // Use the included user details
-      const savedCardAuthCode = ride.user?.savedCardAuthCode;
-      if (!savedCardAuthCode) {
-        throw new Error("User has no saved card yet");
-      }
-      const amountInKobo = fare * 100;
-      chargeSuccessful = await chargeSavedCard(amountInKobo, ride.user.email!, savedCardAuthCode, reference);
-      paymentStatus = chargeSuccessful ? PaymentStatus.completed : PaymentStatus.failed;
-      if (!chargeSuccessful) {
-        await tx.user.update({
-          where: { id: ride.userId },
-          data: { isBlocked: true, outstandingBalance: fare },
-        });
-        throw new Error("Card Payment Failed. Please settle outstanding balance");
-      }
-    } else if (paymentMethod === PaymentMethod.cash) {
+    let paymentStatus: PaymentStatus;
+    if (paymentMethod === PaymentMethod.cash) {
       paymentStatus = PaymentStatus.completed;
-      chargeSuccessful = true;
+    } else if (paymentMethod === PaymentMethod.card) {
+      paymentStatus = PaymentStatus.pending; 
+    } else {
+      throw new Error("Unsupported payment method");
     }
 
-    // Create Payment record
-    const paymentRecord = await tx.payment.create({
+   
+    await tx.payment.create({
       data: {
         rideId,
-        userId: ride.userId,
-        amount: fare,
+        userId: ride.user.id,
+        amount: finalFareAmount,
         netAmount,
         paymentMethod,
         status: paymentStatus,
@@ -550,37 +542,52 @@ export const completeRide = async (
       },
     });
 
-    
-    const walletUpdate = await tx.wallet.update({
-      where: { userId: userId },
-      data: { balance: { increment: netAmount } },
-    });
+    // For cash payments, update the driver's wallet immediately.
+    if (paymentMethod === PaymentMethod.cash) {
+      await tx.wallet.update({
+        where: { userId: userId },
+        data: { balance: { increment: netAmount } },
+      });
+      const driverWallet = await tx.wallet.findUnique({ where: { userId: userId } });
+      if (!driverWallet) throw new Error("Driver wallet not found");
+      await tx.walletTransaction.create({
+        data: {
+          walletId: driverWallet.id,
+          type: 'credit',
+          amount: netAmount,
+          reference,
+          status: 'completed',
+        },
+      });
+    }
 
-    // Record wallet transaction
-    await tx.walletTransaction.create({
-      data: {
-        walletId: walletUpdate.id,
-        type: 'credit',
-        amount: netAmount,
-        reference: paymentRecord.id,
-        status: 'completed',
-      },
-    });
-
-   
-    const completedRidesCount = await tx.ride.count({
-      where: { userId: ride.userId, status: RideStatus.completed },
-    });
+    // Increment rider's total completed rides.
     await tx.user.update({
-      where: { id: ride.userId },
-      data: { totalCompletedRides: completedRidesCount },
+      where: { id: ride.user.id },
+      data: { totalCompletedRides: { increment: 1 } },
     });
 
-    return rideUpdate;
+    // Return the updated ride and rider details.
+    return { rideUpdate, riderEmail: ride.user.email, riderId: ride.user.id };
   });
 
-  return updatedRide;
+  // For card payments, enqueue a job to process the card charge with the email already available.
+  if (paymentMethod === PaymentMethod.card) {
+    const jobPayload = {
+      rideId,
+      finalFare,
+      riderEmail,  // Retrieved from transaction.
+      riderId,     // Rider's user id.
+      userId,
+      netAmount,
+      reference,
+    };
+    await publishToQueue(jobPayload,'cardChargeQueue');
+  }
+
+  return rideUpdate;
 };
+
 
 export const rateUser = async (
   userId: string,

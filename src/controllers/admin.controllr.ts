@@ -5,6 +5,7 @@ import { Statuscode } from "../utils/Statuscode";
 import { resetPassword } from "./forgot.password.controller";
 import { use } from "passport";
 import { AuthRequest } from "../types";
+import { processWithdrawal } from "../services/withdrawal.service";
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -288,3 +289,16 @@ export const getAdminDashboardStats = async (req: Request, res: Response) => {
   }
 };
 
+
+export const approveWithdrawal = async (req: Request, res: Response)=>{
+  try {
+    const { withdrawalId } = req.body;
+   
+    const result = await  processWithdrawal(withdrawalId);
+  
+    res.status(Statuscode.SUCCESS).json(result);
+  } catch (error: any) {
+    console.error("Error processing withdrawal:", error.message);
+    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ error:  "Internal Server Error" });
+  }
+}

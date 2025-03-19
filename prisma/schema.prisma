@@ -46,6 +46,9 @@ model User {
     userRatings           UserRating[]       @relation("UserRatings")
     wallet                Wallet?
     payments              Payment[]          @relation("UserPayments")
+
+    withdrawal            Withdrawal[]       @relation("UserWithdrawals")
+    bank BankDetail?
 }
 
 model Ride {
@@ -195,7 +198,7 @@ model ActivityLog {
 }
 
 model ScheduledRide {
-    id                String     @id
+    id                String     @id 
     riderId           String
     driverId          String?
     scheduledDateTime DateTime
@@ -224,6 +227,7 @@ model Wallet {
     updatedAt    DateTime            @updatedAt
 
     user User @relation(fields: [userId], references: [id])
+    withdrawal Withdrawal[] @relation("WalletToWithdrawals")
 }
 
 model WalletTransaction {
@@ -255,6 +259,39 @@ model Payment {
     user User @relation("UserPayments", fields: [userId], references: [id])
 }
 
+model Withdrawal {
+    id String @id @default(uuid())
+    userId  String
+    walletId String
+    amount Float
+    status WithdrawalStatus @default(pending)
+    reference String
+    createdAt DateTime
+    updatedAt DateTime @updatedAt
+
+    user User @relation("UserWithdrawals", fields: [userId], references: [id])
+    wallet Wallet @relation("WalletToWithdrawals", fields: [walletId], references: [id])
+}
+
+
+model BankDetail {
+    id          String @id @default(uuid())
+    userId      String @unique
+    accountNumber   String
+    bankCode        String
+    accountName     String?
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    user User @relation(fields: [userId], references: [id])
+}
+
+enum WithdrawalStatus {
+    pending
+    completed
+    failed
+
+}
 enum PaymentMethod {
     cash
     card

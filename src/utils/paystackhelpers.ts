@@ -26,7 +26,7 @@ export const chargeSavedCard = async(
             }
         )
 
-        return true 
+        return response.data.data && response.data.data.status === 'success';
     }
     catch(error: any){
         console.log("Paystack charge error", error.response ? error.response.data: error.message)
