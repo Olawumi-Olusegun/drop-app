@@ -1,6 +1,8 @@
 import {
   BidStatus,
   OnlineStatus,
+  PaymentMethod,
+  PaymentStatus,
   PrismaClient,
   RegistrationStatus,
   Ride,
@@ -13,6 +15,8 @@ import { DocumentUploadPayload, DriverRegistrationInput } from "../types";
 import { generatePresignedUrl } from "../utils/s3";
 import { Response } from "express";
 import haversine from "haversine-distance";
+import { COMMISION_RATE } from '../constants';
+import { chargeSavedCard } from "../utils/paystackhelpers";
 const prisma = new PrismaClient();
 
 export const getAvailableDrivers = async (
@@ -482,40 +486,97 @@ export const startRide = async (
 export const completeRide = async (
   rideId: string,
   driverId: string,
-  finalFare: string
-): Promise<Ride> => {
-  const ride = await prisma.ride.findUnique({ where: { id: rideId } });
-  if (!ride) {
-    throw new Error("Ride not found");
-  }
-  if (ride.status !== RideStatus.ongoing) {
-    throw new Error("Ride is not in progress");
-  }
+  finalFare: string,
+  userId: string,
+  paymentMethod: PaymentMethod,
+) => {
+ 
+  const fare = parseFloat(finalFare);
+  const netAmount = fare * (1 - COMMISION_RATE);
+  
+  const reference = `ride-${rideId}-${Date.now()}`;
 
-  if (ride.driverId !== driverId) {
-    throw new Error("Driver is not authorized to complete this ride");
-  }
+  // Wrap all operations in a transaction
+  const updatedRide = await prisma.$transaction(async (tx) => {
+    
+    const ride = await tx.ride.findUnique({
+      where: { id: rideId },
+      include: { user: { select: { email: true, savedCardAuthCode: true } } },
+      
+    });
+    if (!ride) throw new Error("Ride not found");
+    if (ride.status !== RideStatus.ongoing) throw new Error("Ride is not in progress");
+    if (ride.driverId !== driverId) throw new Error("Driver is not authorized to complete this ride");
 
-  const updatedRide = await prisma.ride.update({
-    where: { id: rideId },
-    data: {
-      finalFare: parseFloat(finalFare),
-      status: RideStatus.completed,
-    },
-  });
+    const rideUpdate = await tx.ride.update({
+      where: { id: rideId },
+      data: { finalFare: fare, status: RideStatus.completed },
+    });
 
-  const completedRidesCount = await prisma.ride.count({
-    where: {
-      userId: ride.userId,
-      status: RideStatus.completed,
-    },
-  });
+    let paymentStatus
+    let chargeSuccessful = false;
+    
+    if (paymentMethod === PaymentMethod.card) {
+      // Use the included user details
+      const savedCardAuthCode = ride.user?.savedCardAuthCode;
+      if (!savedCardAuthCode) {
+        throw new Error("User has no saved card yet");
+      }
+      const amountInKobo = fare * 100;
+      chargeSuccessful = await chargeSavedCard(amountInKobo, ride.user.email!, savedCardAuthCode, reference);
+      paymentStatus = chargeSuccessful ? PaymentStatus.completed : PaymentStatus.failed;
+      if (!chargeSuccessful) {
+        await tx.user.update({
+          where: { id: ride.userId },
+          data: { isBlocked: true, outstandingBalance: fare },
+        });
+        throw new Error("Card Payment Failed. Please settle outstanding balance");
+      }
+    } else if (paymentMethod === PaymentMethod.cash) {
+      paymentStatus = PaymentStatus.completed;
+      chargeSuccessful = true;
+    }
 
-  await prisma.user.update({
-    where: { id: ride.userId },
-    data: {
-      totalCompletedRides: completedRidesCount,
-    },
+    // Create Payment record
+    const paymentRecord = await tx.payment.create({
+      data: {
+        rideId,
+        userId: ride.userId,
+        amount: fare,
+        netAmount,
+        paymentMethod,
+        status: paymentStatus,
+        reference,
+      },
+    });
+
+    
+    const walletUpdate = await tx.wallet.update({
+      where: { userId: userId },
+      data: { balance: { increment: netAmount } },
+    });
+
+    // Record wallet transaction
+    await tx.walletTransaction.create({
+      data: {
+        walletId: walletUpdate.id,
+        type: 'credit',
+        amount: netAmount,
+        reference: paymentRecord.id,
+        status: 'completed',
+      },
+    });
+
+   
+    const completedRidesCount = await tx.ride.count({
+      where: { userId: ride.userId, status: RideStatus.completed },
+    });
+    await tx.user.update({
+      where: { id: ride.userId },
+      data: { totalCompletedRides: completedRidesCount },
+    });
+
+    return rideUpdate;
   });
 
   return updatedRide;

@@ -716,6 +716,10 @@
  *               finalFare:
  *                  type: number
  *                  example: 500
+ *               paymentMethod:
+ *                 type: string
+ *                 enum: [cash, card]
+ *                 example: "card"
  *             required:
  *               - driverId
  *     responses:
