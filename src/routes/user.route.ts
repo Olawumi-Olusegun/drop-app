@@ -8,5 +8,5 @@ import { saveOrUpateBankDetails } from "../services/user.service";
 const userRouter = Router()
 
 userRouter.post('/card' , authenticateUser, authorizeRole([UserRole.RIDER]) ,validateSaveCardDetails, saveCardDetailController)
-userRouter.post('/addbank', authenticateUser, validateBankDetails,  saveBankDetails)
+
 export default userRouter

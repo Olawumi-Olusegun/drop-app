@@ -184,7 +184,7 @@ model UserRating {
 }
 
 model ActivityLog {
-    id             String       @id
+    id             String       @id @default(uuid())
     userId         String
     driverId       String?
     rideId         String?
@@ -198,7 +198,7 @@ model ActivityLog {
 }
 
 model ScheduledRide {
-    id                String     @id 
+    id                String     @id @default(uuid())
     riderId           String
     driverId          String?
     scheduledDateTime DateTime

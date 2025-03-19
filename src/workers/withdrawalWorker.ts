@@ -54,6 +54,7 @@ const transferToDriver = async(
 const processWithdrawal = async (msg: amqp.ConsumeMessage | null, channel: amqp.Channel)=>{
 
     if(msg){
+      console.log("QUEUE RECEIEVED")
 
         const jobData = JSON.parse(msg.content.toString());
         const { withdrawalId, email, amount, walletId, reference, bankDetails } = jobData
@@ -89,7 +90,7 @@ const processWithdrawal = async (msg: amqp.ConsumeMessage | null, channel: amqp.
             else{
                 await prisma.withdrawal.update({
                     where: {id: withdrawalId},
-                    data: {status: WithdrawalStatus.FAILED}
+                    data: {status: WithdrawalStatus.failed}
                 })
                 throw new Error("Payout failed via Paystack")
             }
