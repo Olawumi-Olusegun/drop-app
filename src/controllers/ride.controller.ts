@@ -11,8 +11,8 @@ export const requestRide = async (req: Request, res: Response) => {
 
   const userRequest = (req as AuthRequest)?.user;
 
-    const {  
-      riderId, 
+    const {
+      riderId,
       pickupLocation, 
       pickupLongitude, 
       pickupLatitude, 
@@ -428,7 +428,7 @@ export const placeBid = async (req: Request, res: Response) => {
     const updatedActivity = await prisma.activityLog.update({
       where: { id: activityExist?.id },
       data: {...activityData }
-    })
+    });
 
     return res.status(Statuscode.CREATED).json({ success: true, data: { bid } });
 
