@@ -22,7 +22,7 @@ import { startCronJob } from "./utils/cronJob";
 
 
 // Load the correct environment file based on NODE_ENV
-const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
+const envFile = (process.env.NODE_ENV === "development") ? ".env.development" : ".env";
 
 dotenv.config({ path: envFile });
 
