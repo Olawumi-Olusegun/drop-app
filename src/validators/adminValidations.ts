@@ -89,3 +89,14 @@ export const  validatesuspendDriver = [
       },
 ]
 
+
+export const validateApproveWithdrawal = [
+  body('withdrawalId')
+    .exists().withMessage('withdrawalId is required')
+    .isUUID().withMessage('withdrawalId must be a valid UUID'),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    next();
+  },
+];

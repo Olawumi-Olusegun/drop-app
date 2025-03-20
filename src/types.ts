@@ -3,7 +3,7 @@ import { Request } from "express";
 import passport from 'passport';
 
 export interface AuthRequest extends Request {
-  user?: {
+  user: {
     userId: string;
     driverId?: string
     role: string;

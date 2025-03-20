@@ -156,6 +156,12 @@ export const signupWithEmail = async (req: Request, res: Response) => {
           expiresAt: expirationTime().toISOString(),
         },
       });
+
+      await tx.wallet.create({
+        data:{
+          userId: createdUser.id
+        }
+      })
       return createdUser;
     });
 
@@ -198,6 +204,12 @@ export const signupWithGoogle = async (req: Request, res: Response) => {
         isUserVerified: true, // Since Google authentication is verified, mark user as verified
       },
     });
+
+    await prisma.wallet.create({
+      data: {
+        userId: newUser.id
+      }
+    })
 
     if (!newUser) {
       return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to create user account" });
