@@ -41,7 +41,6 @@ export const requestRide = async (req: Request, res: Response) => {
       }
 
 
-
   // Create a new ride request
     const ride = await prisma.ride.create({
       data: {
