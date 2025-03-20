@@ -1,19 +1,20 @@
 import express from "express";
 
-import { 
+import {
   createCourier,
   getCouriers,
   getCourierById,
   updateCourier,
   deleteCourier,
 } from "../controllers/courier.controller";
+import { authenticateUser } from "../../../middlewares/auth.middleware";
 
 const router = express.Router();
 
-router.post("/", createCourier);
-router.get("/", getCouriers);
-router.get("/:courierId", getCourierById);
-router.put("/:courierId", updateCourier);
-router.delete("/:courierId", deleteCourier);
+router.post("/", authenticateUser, createCourier);
+router.get("/", authenticateUser, getCouriers);
+router.get("/:courierId", authenticateUser, getCourierById);
+router.put("/:courierId", authenticateUser, updateCourier);
+router.delete("/:courierId", authenticateUser, deleteCourier);
 
 export default router;
