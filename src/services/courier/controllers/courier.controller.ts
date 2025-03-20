@@ -4,6 +4,7 @@ import { Statuscode } from "../../../utils/Statuscode";
 import { generateOTP } from "../../../utils/generateOTP";
 import { expirationTime } from "../../../utils/timeExpiry";
 import { AuthRequest } from "../../../types";
+import { PackageType, PaymentMethod, TransportType } from "@prisma/client";
 
 // Create a new courier order
 export const createCourier = async (req: Request, res: Response) => {
@@ -13,7 +14,6 @@ export const createCourier = async (req: Request, res: Response) => {
   try {
 
     const {
-        imageUrl,
         packageType,
         pickupLocation,
         pickupLatitude,
@@ -41,8 +41,6 @@ export const createCourier = async (req: Request, res: Response) => {
 
     const courier = await prisma.courierService.create({
       data: {
-        imageUrl: imageUrl ?? undefined,
-        packageType,
         pickupLocation,
         pickupLatitude,
         pickupLongitude,
@@ -51,15 +49,16 @@ export const createCourier = async (req: Request, res: Response) => {
         dropoffLongitude,
         userTimezone: userTimezone ?? undefined,
         expiresAt: expiresAt ?? undefined,
-        transportType,
-        paymentMethod,
         senderName,
         senderPhoneNumber,
         receiverName,
         receiverPhoneNumber,
         packageDescription,
         otp,
-        userId
+        userId,
+        packageType: PackageType[packageType as keyof typeof PackageType],
+        transportType: TransportType[transportType as keyof typeof TransportType],
+        paymentMethod: PaymentMethod[paymentMethod as keyof typeof PaymentMethod],
       },
     });
 
