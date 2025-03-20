@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { approveDriver, getAdminDashboardStats, getAllDrivers, getAllPendingDrivers, getAllUsers, getDriver, getUser, suspendDriver } from "../controllers/admin.controllr";
+import { approveDriver, approveWithdrawal, getAdminDashboardStats, getAllDrivers, getAllPendingDrivers, getAllUsers, getDriver, getUser, suspendDriver } from "../controllers/admin.controller";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
 
-import { validateapproveDriver, validateGetAllDrivers, validateGetAllUsers, validateGetDriver, validateGetUSer, validatesuspendDriver } from "../validators/adminValidations";
+import { validateapproveDriver, validateApproveWithdrawal, validateGetAllDrivers, validateGetAllUsers, validateGetDriver, validateGetUSer, validatesuspendDriver } from "../validators/adminValidations";
 import { UserRole } from "../types";
 
 const router = Router()
@@ -15,5 +15,5 @@ router.post('/approve-driver',authenticateUser, authorizeRole([UserRole.ADMIN]),
 router.post('/suspend-driver',authenticateUser, authorizeRole([UserRole.ADMIN]), validatesuspendDriver, suspendDriver)
 router.get('/pending-drivers',authenticateUser, authorizeRole([UserRole.ADMIN]) , getAllPendingDrivers)
 router.get('/admin-dashboard',authenticateUser, authorizeRole([UserRole.ADMIN]),getAdminDashboardStats)
-
+router.post('/approve-withdrawal', authenticateUser, authorizeRole([UserRole.ADMIN]),validateApproveWithdrawal, approveWithdrawal)
 export default router

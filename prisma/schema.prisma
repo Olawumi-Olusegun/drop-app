@@ -37,15 +37,19 @@ model User {
   updatedAt             DateTime           @updatedAt
   outstandingBalance    Float              @default(0.0)
   savedCardAuthCode     String?
-  ActivityLog           ActivityLog[]      @relation("UserActivities")
+  ActivityLog           ActivityLog[]
+  bank                  BankDetail?
   Driver                Driver?
   otp                   OTP?
-  Payment               Payment[]
+  payments              Payment[]          @relation("UserPayments")
   ridesAsUser           Ride[]             @relation("UserRides")
   rideCancellations     RideCancel[]
-  scheduledRidesAsUser  ScheduledRide[]    @relation("UserScheduledRides")
+  ScheduledRide         ScheduledRide[]
   userRatings           UserRating[]       @relation("UserRatings")
-  Wallet                Wallet?
+  wallet                Wallet?
+  withdrawal            Withdrawal[]       @relation("UserWithdrawals")
+
+  couriers CourierService[] @relation("UserRides")
 }
 
 model Ride {
@@ -64,31 +68,11 @@ model Ride {
   expiresAt        DateTime?
   createdAt        DateTime      @default(now())
   ActivityLog      ActivityLog[]
-  Payment          Payment?
+  payment          Payment?      @relation("PaymentToRide")
   driver           Driver?       @relation("DriverRides", fields: [driverId], references: [id])
   user             User          @relation("UserRides", fields: [userId], references: [id], onDelete: Cascade)
   bids             RideBid[]
   cancellations    RideCancel[]
-}
-
-model ScheduledRide {
-  id                String     @id @default(uuid())
-  riderId           String
-  driverId          String?
-  scheduledDateTime DateTime
-  pickupLocation    String
-  pickupLatitude    Float
-  pickupLongitude   Float
-  dropoffLocation   String
-  dropoffLatitude   Float
-  dropoffLongitude  Float
-  finalFare         Float?     @default(0.0)
-  userTimezone      String
-  status            RideStatus @default(pending)
-  createdAt         DateTime   @default(now())
-  bids              RideBid[]
-  driver            Driver?    @relation("DriverScheduledRides", fields: [driverId], references: [id])
-  user              User       @relation("UserScheduledRides", fields: [riderId], references: [id])
 }
 
 model RideBid {
@@ -102,7 +86,7 @@ model RideBid {
   scheduledId   String?
   driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Cascade)
   ride          Ride?          @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  scheduledRide ScheduledRide? @relation(fields: [scheduledId], references: [id], onDelete: Cascade)
+  ScheduledRide ScheduledRide? @relation(fields: [scheduledId], references: [id], onDelete: Cascade)
 }
 
 model RideCancel {
@@ -142,14 +126,14 @@ model Driver {
   registrationDate    DateTime              @default(now())
   approvalDate        DateTime?
   approvedBy          String?
-  activities          ActivityLog[]         @relation("DriverActivities")
+  ActivityLog         ActivityLog[]
   user                User                  @relation(fields: [userId], references: [id])
   identifications     DriverIdentification?
   vehicles            DriverVehicle?
   DriverWallet        DriverWallet?
   ridesAsDriver       Ride[]                @relation("DriverRides")
   rideBids            RideBid[]
-  scheduledRides      ScheduledRide[]       @relation("DriverScheduledRides")
+  ScheduledRide       ScheduledRide[]
 }
 
 model DriverIdentification {
@@ -209,13 +193,57 @@ model ActivityLog {
   description    String
   subDescription String?
   createdAt      DateTime     @default(now())
-  driver         Driver?      @relation("DriverActivities", fields: [driverId], references: [id], onDelete: Cascade)
-  ride           Ride?        @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  user           User         @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+  Driver         Driver?      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  Ride           Ride?        @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ScheduledRide {
+  id                String     @id @default(uuid())
+  riderId           String
+  driverId          String?
+  scheduledDateTime DateTime
+  pickupLocation    String
+  pickupLatitude    Float
+  pickupLongitude   Float
+  dropoffLocation   String
+  dropoffLatitude   Float
+  dropoffLongitude  Float
+  finalFare         Float?     @default(0.0)
+  userTimezone      String
+  status            RideStatus @default(pending)
+  createdAt         DateTime   @default(now())
+  RideBid           RideBid[]
+  Driver            Driver?    @relation(fields: [driverId], references: [id])
+  User              User       @relation(fields: [riderId], references: [id])
+}
+
+model Wallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique
+  balance      Float               @default(0.0)
+  currency     String              @default("NGN")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  user         User                @relation(fields: [userId], references: [id])
+  transactions WalletTransaction[]
+  withdrawal   Withdrawal[]        @relation("WalletToWithdrawals")
+}
+
+model WalletTransaction {
+  id        String            @id @default(uuid())
+  walletId  String
+  type      TransactionType
+  amount    Float
+  reference String            @unique
+  status    TransactionStatus @default(pending)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  wallet    Wallet            @relation(fields: [walletId], references: [id])
 }
 
 model Payment {
-  id            String        @id
+  id            String        @id @default(uuid())
   rideId        String        @unique
   userId        String
   amount        Float
@@ -223,61 +251,116 @@ model Payment {
   paymentMethod PaymentMethod
   status        PaymentStatus @default(pending)
   reference     String        @unique
-  createdAt     DateTime      @default(now())
-  Ride          Ride          @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  User          User          @relation(fields: [userId], references: [id])
+
+  //[serviceId]: A more generic payment field for all drop app services
+  serviceType        ServiceType @default(book_ride)
+  serviceId          String?     @unique
+  serviceDescription String?
+
+  createdAt DateTime        @default(now())
+  ride      Ride            @relation("PaymentToRide", fields: [rideId], references: [id], onDelete: Cascade)
+  user      User            @relation("UserPayments", fields: [userId], references: [id])
+  courier   CourierService? @relation("PaymentToCourier")
 }
 
-model Wallet {
-  id                String              @id
-  userId            String              @unique
-  balance           Float               @default(0.0)
-  currency          String              @default("NGN")
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime
-  User              User                @relation(fields: [userId], references: [id])
-  WalletTransaction WalletTransaction[]
-}
-
-model WalletTransaction {
-  id        String            @id
+model Withdrawal {
+  id        String           @id @default(uuid())
+  userId    String
   walletId  String
-  type      TransactionType
   amount    Float
-  reference String            @unique
-  status    TransactionStatus @default(pending)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime
-  Wallet    Wallet            @relation(fields: [walletId], references: [id])
+  status    WithdrawalStatus @default(pending)
+  reference String
+  createdAt DateTime
+  updatedAt DateTime         @updatedAt
+  user      User             @relation("UserWithdrawals", fields: [userId], references: [id])
+  wallet    Wallet           @relation("WalletToWithdrawals", fields: [walletId], references: [id])
+}
+
+model BankDetail {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  accountNumber String
+  bankCode      String
+  accountName   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model CourierService {
+  id                  String        @id @default(uuid())
+  imageUrl            String?
+  packageType         PackageType
+  pickupLocation      String
+  pickupLatitude      Float
+  pickupLongitude     Float
+  dropoffLocation     String
+  dropoffLatitude     Float
+  dropoffLongitude    Float
+  finalFare           Float?        @default(0.0)
+  userTimezone        String?
+  expiresAt           DateTime?
+  transportType       TransportType
+  paymentMethod       PaymentMethod
+  senderName          String
+  senderPhoneNumber   String
+  receiverName        String
+  receiverPhoneNumber String
+  packageDescription  String
+  otp                 String
+  userId              String
+  user                User          @relation("UserRides", fields: [userId], references: [id], onDelete: Cascade)
+
+  paymentId String?  @unique
+  payment   Payment? @relation("PaymentToCourier", fields: [paymentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PackageType {
+  sendPackage
+  receivePackage
+}
+
+enum TransportType {
+  motorCycle
+  car
+}
+
+enum PaymentMethod {
+  cash
+  card
+  bankTransfer
+}
+
+enum WithdrawalStatus {
+  pending
+  completed
+  failed
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+}
+
+enum TransactionType {
+  credit
+  debit
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
 }
 
 enum verificationType {
   NIN
   Passport
   IdCard
-}
-
-enum ActivityType {
-  ride_pending
-  ride_ongoing
-  ride_requested
-  ride_accepted
-  ride_started
-  ride_completed
-  ride_canceled
-  bid_placed
-  bid_accepted
-  bid_rejected
-  scheduled_ride_created
-  scheduled_ride_completed
-  scheduled_ride_canceled
-  payment_processed
-  rating_given
-  rating_received
-  profile_updated
-  vehicle_updated
-  wallet_credited
-  wallet_debited
 }
 
 enum RideStatus {
@@ -315,34 +398,44 @@ enum RegistrationStatus {
   suspended
 }
 
-enum BiddingType {
-  instant
-  scheduled
-}
-
 enum OnlineStatus {
   online
   offline
 }
 
-enum PaymentMethod {
-  cash
-  card
+enum ActivityType {
+  ride_pending
+  ride_ongoing
+  ride_requested
+  ride_accepted
+  ride_started
+  ride_completed
+  ride_canceled
+  bid_placed
+  bid_accepted
+  bid_rejected
+  scheduled_ride_created
+  scheduled_ride_completed
+  scheduled_ride_canceled
+  payment_processed
+  rating_given
+  rating_received
+  profile_updated
+  vehicle_updated
+  wallet_credited
+  wallet_debited
 }
 
-enum PaymentStatus {
-  pending
-  completed
-  failed
+enum BiddingType {
+  instant
+  scheduled
 }
 
-enum TransactionStatus {
-  pending
-  completed
-  failed
-}
-
-enum TransactionType {
-  credit
-  debit
+enum ServiceType {
+  book_ride
+  courier
+  hire_artisan
+  rent_car
+  hire_driver
+  book_freight
 }

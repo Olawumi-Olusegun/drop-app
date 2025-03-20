@@ -22,6 +22,8 @@ import prisma from "../config/db";
 import { getDriverRideHistory, goOnline } from '../services/driver.service';
 import { AuthRequest } from "../types";
 import { HttpStatusCode } from "axios";
+import { requestWithdrawal } from '../services/withdrawal.service';
+import { error } from 'console';
 
 
 export const registerDriverController = async (req: Request, res: Response) => {
@@ -328,13 +330,14 @@ export const startRideController = async (req: Request, res: Response) => {
 export const completeRideController = async (req: Request, res: Response) => {
   try {
     const { rideId } = req.params;
-    const { driverId } = req.body;
-    const driver = (req as AuthRequest).user?.driverId
+    const { driverId, paymentMethod} = req.body;
+    const driver = (req as AuthRequest).user.driverId
+    const userId = (req as AuthRequest).user.userId
     if (driverId !== driver) {
       throw new Error("Invalid Access")
     }
     const finalFare = req.body.finalFare as string
-    const updatedRide = await completeRide(rideId, driverId, finalFare);
+    const updatedRide = await completeRide(rideId, driverId, finalFare, userId, paymentMethod);
     res.status(200).json(updatedRide);
   } catch (error: any) {
     if (error.message == "Ride not found") {
@@ -349,6 +352,8 @@ export const completeRideController = async (req: Request, res: Response) => {
     if (error.message === "Invalid Access") {
       return res.status(Statuscode.UNAUTHORIZED).json({ error: error.message })
     }
+
+    console.log(error.message)
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -408,6 +413,25 @@ export const getDriverRideHistoryController = async (req: Request, res: Response
   }
 }
 
+export const requestWithdrawalController = async(req: Request, res: Response)=>{
+
+  try{
+
+    const { userId, amount} = req.body
+
+
+    const result = await requestWithdrawal(userId, amount)
+
+    res.status(Statuscode.SUCCESS).json(result)
+    
+
+  }
+  catch(error: any){
+    console.error(error.message)
+    res.status(Statuscode.INTERNAL_SERVER_ERROR).json({error: "Internal Server Error"})
+    
+  }
+}
 
 
 
