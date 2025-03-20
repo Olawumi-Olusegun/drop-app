@@ -1,6 +1,9 @@
 import {
   BidStatus,
   OnlineStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
   PrismaClient,
   RegistrationStatus,
   Ride,
@@ -13,6 +16,10 @@ import { DocumentUploadPayload, DriverRegistrationInput } from "../types";
 import { generatePresignedUrl } from "../utils/s3";
 import { Response } from "express";
 import haversine from "haversine-distance";
+import { COMMISION_RATE } from '../constants';
+import { chargeSavedCard } from "../utils/paystackhelpers";
+import { publishToQueue } from "../jobs/rabbbitMqJob";
+
 const prisma = new PrismaClient();
 
 export const getAvailableDrivers = async (
@@ -477,49 +484,110 @@ export const startRide = async (
   });
 
   return updatedRide;
+
+
 };
+
+
+
+
 
 export const completeRide = async (
   rideId: string,
   driverId: string,
-  finalFare: string
-): Promise<Ride> => {
-  const ride = await prisma.ride.findUnique({ where: { id: rideId } });
-  if (!ride) {
-    throw new Error("Ride not found");
-  }
-  if (ride.status !== RideStatus.ongoing) {
-    throw new Error("Ride is not in progress");
-  }
 
-  if (ride.driverId !== driverId) {
-    throw new Error("Driver is not authorized to complete this ride");
-  }
+  finalFare: string,
+  userId: string,
+  paymentMethod: PaymentMethod
+) => {
+  const finalFareAmount = parseFloat(finalFare);
+  const netAmount = finalFareAmount * (1 - COMMISION_RATE);
+  const reference = `ride-${rideId}-${Date.now()}`;
 
-  const updatedRide = await prisma.ride.update({
-    where: { id: rideId },
-    data: {
-      finalFare: parseFloat(finalFare),
-      status: RideStatus.completed,
-    },
+  // Wrap critical operations in one transaction and return needed rider details.
+  const { rideUpdate, riderEmail, riderId } = await prisma.$transaction(async (tx) => {
+    const ride = await tx.ride.findUnique({
+      where: { id: rideId },
+      include: { user: { select: { id: true, email: true, savedCardAuthCode: true } } },
+    });
+    if (!ride) throw new Error("Ride not found");
+    if (ride.status !== RideStatus.ongoing) throw new Error("Ride is not in progress");
+    if (ride.driverId !== driverId) throw new Error("Driver is not authorized to complete this ride");
+
+    // Update the ride to completed.
+    const rideUpdate = await tx.ride.update({
+      where: { id: rideId },
+      data: { finalFare: finalFareAmount, status: RideStatus.completed },
+    });
+
+    let paymentStatus: PaymentStatus;
+    if (paymentMethod === PaymentMethod.cash) {
+      paymentStatus = PaymentStatus.completed;
+    } else if (paymentMethod === PaymentMethod.card) {
+      paymentStatus = PaymentStatus.pending; 
+    } else {
+      throw new Error("Unsupported payment method");
+    }
+
+   
+    await tx.payment.create({
+      data: {
+        rideId,
+        userId: ride.user.id,
+        amount: finalFareAmount,
+        netAmount,
+        paymentMethod,
+        status: paymentStatus,
+        reference,
+      },
+    });
+
+    // For cash payments, update the driver's wallet immediately.
+    if (paymentMethod === PaymentMethod.cash) {
+      await tx.wallet.update({
+        where: { userId: userId },
+        data: { balance: { increment: netAmount } },
+      });
+      const driverWallet = await tx.wallet.findUnique({ where: { userId: userId } });
+      if (!driverWallet) throw new Error("Driver wallet not found");
+      await tx.walletTransaction.create({
+        data: {
+          walletId: driverWallet.id,
+          type: 'credit',
+          amount: netAmount,
+          reference,
+          status: 'completed',
+        },
+      });
+    }
+
+    // Increment rider's total completed rides.
+    await tx.user.update({
+      where: { id: ride.user.id },
+      data: { totalCompletedRides: { increment: 1 } },
+    });
+
+    // Return the updated ride and rider details.
+    return { rideUpdate, riderEmail: ride.user.email, riderId: ride.user.id };
   });
 
-  const completedRidesCount = await prisma.ride.count({
-    where: {
-      userId: ride.userId,
-      status: RideStatus.completed,
-    },
-  });
+  // For card payments, enqueue a job to process the card charge with the email already available.
+  if (paymentMethod === PaymentMethod.card) {
+    const jobPayload = {
+      rideId,
+      finalFare,
+      riderEmail,  // Retrieved from transaction.
+      riderId,     // Rider's user id.
+      userId,
+      netAmount,
+      reference,
+    };
+    await publishToQueue(jobPayload,'cardChargeQueue');
+  }
 
-  await prisma.user.update({
-    where: { id: ride.userId },
-    data: {
-      totalCompletedRides: completedRidesCount,
-    },
-  });
-
-  return updatedRide;
+  return rideUpdate;
 };
+
 
 export const rateUser = async (
   userId: string,

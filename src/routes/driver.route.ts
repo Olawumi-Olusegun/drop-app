@@ -15,6 +15,7 @@ import {
     goOnlineController,
     rateUserController,
     registerDriverController,
+    requestWithdrawalController,
     startRideController,
 } from "../controllers/driver.controller";
 import { updateDriverDocuments } from "../services/driver.service";
@@ -34,10 +35,13 @@ import {
     validateRideIdParam,
     validateStartRide,
     validateUpdateDriverDocuments,
+    validateWithdrawalRequest,
 } from "../validators/driverValidator";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
 import { UserRole } from "@prisma/client";
 import { rejectSuspendedDrivers } from "../middlewares/suspended.driver.middleware";
+import { validateBankDetails } from "../validators/userValidator";
+import { saveBankDetails } from "../controllers/user.controller";
 
 const router = express.Router();
 
@@ -63,4 +67,6 @@ router.post("/:rideId/complete", authenticateUser, rejectSuspendedDrivers,valida
 router.post("/:userId/rate", authenticateUser, rejectSuspendedDrivers,validateRateUser, rateUserController);
 router.get("/rides", authenticateUser, rejectSuspendedDrivers,validateDriverRideHistory, getDriverRideHistoryController);
 router.get('/wallet', authenticateUser, rejectSuspendedDrivers,validateDriverWallet, getDriverWalletController)
+router.post('/addbank', authenticateUser, rejectSuspendedDrivers, validateBankDetails ,  saveBankDetails)
+router.post('/request-withdrawal', authenticateUser, rejectSuspendedDrivers, validateWithdrawalRequest,requestWithdrawalController)
 export default router;

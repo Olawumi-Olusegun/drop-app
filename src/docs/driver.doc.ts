@@ -716,6 +716,10 @@
  *               finalFare:
  *                  type: number
  *                  example: 500
+ *               paymentMethod:
+ *                 type: string
+ *                 enum: [cash, card]
+ *                 example: "card"
  *             required:
  *               - driverId
  *     responses:
@@ -838,6 +842,51 @@
  *                   example: 10
  *       400:
  *         description: Invalid parameters.
+ *       500:
+ *         description: Internal server error.
+ */
+
+
+/**
+ * @swagger
+ * /api/v1/withdrawals/request:
+ *   post:
+ *     summary: Request a withdrawal from driver wallet
+ *     description: Allows a driver to request a withdrawal if their wallet has sufficient funds.
+ *     tags:
+ *       - Withdrawals
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "driver-uuid"
+ *               amount:
+ *                 type: number
+ *                 example: 500
+ *             required:
+ *               - userId
+ *               - amount
+ *     responses:
+ *       200:
+ *         description: Withdrawal request created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 withdrawal:
+ *                   $ref: '#/components/schemas/Withdrawal'
+ *       400:
+ *         description: Invalid input.
  *       500:
  *         description: Internal server error.
  */
