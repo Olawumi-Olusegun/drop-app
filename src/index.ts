@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.route";
 import driverRoutes from "./routes/driver.route";
 import rideRoutes from "./routes/ride.route";
 import adminRoutes from "./routes/admin.route";
+import courierRoutes from "./services/courier/routes/courier.route";
 import passportRoutes from "./routes/passport.route";
 import scheduleRideRoutes from "./routes/schedule-ride.route";
 import userRoutes from "./routes/user.route"
@@ -23,7 +24,7 @@ import { startCronJob } from "./utils/cronJob";
 
 
 // Load the correct environment file based on NODE_ENV
-const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
+const envFile = (process.env.NODE_ENV === "development") ? ".env.development" : ".env";
 
 dotenv.config({ path: envFile });
 
@@ -70,6 +71,7 @@ app.use("/api/v1/rides", rideRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use("/api/v1/scheduled-rides", scheduleRideRoutes);
 app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/couriers', courierRoutes)
 
 
 // Catch-all middleware for 404 routes
