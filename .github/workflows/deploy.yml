@@ -40,7 +40,7 @@ jobs:
         with:
           task-definition: ./ecs-task-definition.json #${{ secrets.ECS_TASK_DEFINITION }}
           container-name: "drop-ride"
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
+          image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
