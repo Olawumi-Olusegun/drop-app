@@ -77,7 +77,7 @@ export const registerDriverController = async (req: Request, res: Response) => {
     res.status(201).json({
       message: "Driver registered Succesfully",
       driver: result.driver,
-      uploadUrls: result.preSignedUrls,
+     // uploadUrls: result.preSignedUrls,
     });
   } catch (error: any) {
     if (error.message === "User does not exist") {
