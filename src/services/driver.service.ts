@@ -126,8 +126,22 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
   const existingDriver = await prisma.driver.findUnique({
     where: { userId: data.userId },
   });
+  
   if (existingDriver) {
-    throw new Error("Driver already exists");
+
+    await prisma.driverIdentification.delete({
+      where: { driverId: existingDriver.id },
+    })
+
+    await prisma.driverVehicle.delete({
+      where: { driverId: existingDriver.id },
+    })
+    await prisma.driver.delete({
+      where: { id:  existingDriver.id },
+    })
+
+   
+    //throw new Error("Driver already exists");
   }
 
 
