@@ -186,47 +186,47 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
   });
 
 
-  const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
-  const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
-  const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
-  const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
-  const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
-  const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
-  const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
-  const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
+  // const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
+  // const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
+  // const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
+  // const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
+  // const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
+  // const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
+  // const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
+  // const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
 
-  const [
-    passPortPhotoUrl,
-    idCardFrontUrl,
-    idCardBackUrl,
-    licensePhotoUrl,
-    selfieWithLicenseUrl,
-    carPictureUrl,
-    vehicleRegistrationUrl,
-    roadWorthinessUrl,
-  ] = await Promise.all([
-    generatePresignedUrl(passportPhotoKey),
-    generatePresignedUrl(idCardFrontKey),
-    generatePresignedUrl(idCardBackKey),
-    generatePresignedUrl(licensePhotoKey),
-    generatePresignedUrl(selfieWithLicenseKey),
-    generatePresignedUrl(carPictureKey),
-    generatePresignedUrl(vehicleRegistrationKey),
-    generatePresignedUrl(roadWorthinessKey),
-  ]);
+  // const [
+  //   passPortPhotoUrl,
+  //   idCardFrontUrl,
+  //   idCardBackUrl,
+  //   licensePhotoUrl,
+  //   selfieWithLicenseUrl,
+  //   carPictureUrl,
+  //   vehicleRegistrationUrl,
+  //   roadWorthinessUrl,
+  // ] = await Promise.all([
+  //   generatePresignedUrl(passportPhotoKey),
+  //   generatePresignedUrl(idCardFrontKey),
+  //   generatePresignedUrl(idCardBackKey),
+  //   generatePresignedUrl(licensePhotoKey),
+  //   generatePresignedUrl(selfieWithLicenseKey),
+  //   generatePresignedUrl(carPictureKey),
+  //   generatePresignedUrl(vehicleRegistrationKey),
+  //   generatePresignedUrl(roadWorthinessKey),
+  // ]);
 
-  const preSignedUrls = {
-    passPortPhotoUrl,
-    idCardFrontUrl,
-    idCardBackUrl,
-    licensePhotoUrl,
-    selfieWithLicenseUrl,
-    carPictureUrl,
-    vehicleRegistrationUrl,
-    roadWorthinessUrl,
-  };
+  // const preSignedUrls = {
+  //   passPortPhotoUrl,
+  //   idCardFrontUrl,
+  //   idCardBackUrl,
+  //   licensePhotoUrl,
+  //   selfieWithLicenseUrl,
+  //   carPictureUrl,
+  //   vehicleRegistrationUrl,
+  //   roadWorthinessUrl,
+  // };
 
-  return { driver, preSignedUrls };
+  return { driver };
 };
 
 export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {

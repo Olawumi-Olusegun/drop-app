@@ -3,7 +3,7 @@ name: CICD PIPELINE TO DEPLOY TO AWS ECS
 on:
   push:
     branches:
-      - main
+      - Oluwafemi
 
 jobs:
   build:
@@ -39,7 +39,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
-          container-name: "your-container-name"
+          container-name: "drop-ride"
           image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Deploy to Amazon ECS
