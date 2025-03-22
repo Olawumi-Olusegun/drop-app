@@ -126,8 +126,22 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
   const existingDriver = await prisma.driver.findUnique({
     where: { userId: data.userId },
   });
+  
   if (existingDriver) {
-    throw new Error("Driver already exists");
+
+    await prisma.driverIdentification.delete({
+      where: { driverId: existingDriver.id },
+    })
+
+    await prisma.driverVehicle.delete({
+      where: { driverId: existingDriver.id },
+    })
+    await prisma.driver.delete({
+      where: { id:  existingDriver.id },
+    })
+
+   
+    //throw new Error("Driver already exists");
   }
 
 
@@ -186,47 +200,47 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
   });
 
 
-  const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
-  const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
-  const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
-  const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
-  const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
-  const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
-  const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
-  const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
+  // const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
+  // const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
+  // const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
+  // const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
+  // const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
+  // const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
+  // const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
+  // const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
 
-  const [
-    passPortPhotoUrl,
-    idCardFrontUrl,
-    idCardBackUrl,
-    licensePhotoUrl,
-    selfieWithLicenseUrl,
-    carPictureUrl,
-    vehicleRegistrationUrl,
-    roadWorthinessUrl,
-  ] = await Promise.all([
-    generatePresignedUrl(passportPhotoKey),
-    generatePresignedUrl(idCardFrontKey),
-    generatePresignedUrl(idCardBackKey),
-    generatePresignedUrl(licensePhotoKey),
-    generatePresignedUrl(selfieWithLicenseKey),
-    generatePresignedUrl(carPictureKey),
-    generatePresignedUrl(vehicleRegistrationKey),
-    generatePresignedUrl(roadWorthinessKey),
-  ]);
+  // const [
+  //   passPortPhotoUrl,
+  //   idCardFrontUrl,
+  //   idCardBackUrl,
+  //   licensePhotoUrl,
+  //   selfieWithLicenseUrl,
+  //   carPictureUrl,
+  //   vehicleRegistrationUrl,
+  //   roadWorthinessUrl,
+  // ] = await Promise.all([
+  //   generatePresignedUrl(passportPhotoKey),
+  //   generatePresignedUrl(idCardFrontKey),
+  //   generatePresignedUrl(idCardBackKey),
+  //   generatePresignedUrl(licensePhotoKey),
+  //   generatePresignedUrl(selfieWithLicenseKey),
+  //   generatePresignedUrl(carPictureKey),
+  //   generatePresignedUrl(vehicleRegistrationKey),
+  //   generatePresignedUrl(roadWorthinessKey),
+  // ]);
 
-  const preSignedUrls = {
-    passPortPhotoUrl,
-    idCardFrontUrl,
-    idCardBackUrl,
-    licensePhotoUrl,
-    selfieWithLicenseUrl,
-    carPictureUrl,
-    vehicleRegistrationUrl,
-    roadWorthinessUrl,
-  };
+  // const preSignedUrls = {
+  //   passPortPhotoUrl,
+  //   idCardFrontUrl,
+  //   idCardBackUrl,
+  //   licensePhotoUrl,
+  //   selfieWithLicenseUrl,
+  //   carPictureUrl,
+  //   vehicleRegistrationUrl,
+  //   roadWorthinessUrl,
+  // };
 
-  return { driver, preSignedUrls };
+  return { driver };
 };
 
 export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {

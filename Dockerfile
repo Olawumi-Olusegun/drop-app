@@ -12,7 +12,7 @@ RUN npm ci
 
 # Copy Prisma schema and .env file
 COPY ./prisma/schema.prisma ./prisma/schema.prisma
-COPY .env ./
+#COPY .env ./
 
 # Generate Prisma Client
 RUN npx prisma generate

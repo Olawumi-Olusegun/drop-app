@@ -19,7 +19,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region:  eu-north-1 #${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -28,7 +28,7 @@ jobs:
       - name: Build and Push Docker Image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          ECR_REPOSITORY: drop-ride #${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -38,14 +38,14 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
-          container-name: "your-container-name"
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          task-definition: ./ecs-task-definition.json #${{ secrets.ECS_TASK_DEFINITION }}
+          container-name: "drop-ride"
+          image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ secrets.ECS_SERVICE_NAME }}
-          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          service: #${{ secrets.ECS_SERVICE_NAME }}
+          cluster: #${{ secrets.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
