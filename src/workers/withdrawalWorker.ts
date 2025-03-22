@@ -2,12 +2,13 @@ import axios from "axios";
 import prisma from "../config/db";
 import amqp from 'amqplib';
 import { WithdrawalStatus } from "@prisma/client";
+import { error } from 'console';
 
 
 const QUEUE_NAME = "withdrawalQueue"
 const PAYSTACK_PAYOUT_URL = 'https://api.paystack.co/transfer'
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
-
+const MAX_RETRIES = 3
 const transferToDriver = async(
 
     account_number: string,
@@ -50,68 +51,75 @@ const transferToDriver = async(
         }
       
  }
+ const processWithdrawal = async (msg: amqp.ConsumeMessage | null, channel: amqp.Channel) => {
+  if (!msg) return;
 
-const processWithdrawal = async (msg: amqp.ConsumeMessage | null, channel: amqp.Channel)=>{
+  console.log("QUEUE RECEIVED");
 
-    if(msg){
-      console.log("QUEUE RECEIEVED")
+  const jobData = JSON.parse(msg.content.toString());
+  const { withdrawalId, email, amount, walletId, reference, bankDetails, retries = 0 } = jobData;
+  const amountInKobo = amount * 100;
 
-        const jobData = JSON.parse(msg.content.toString());
-        const { withdrawalId, email, amount, walletId, reference, bankDetails } = jobData
-        const amountInKobo = amount * 100;
+  try {
+      const transfer = await transferToDriver(
+          bankDetails.accountNumber,
+          bankDetails.bankCode,
+          amountInKobo,
+          "NGN",
+          reference,
+          "Driver Payout"
+      );
 
-        try{
-            const transfer = await transferToDriver(bankDetails.accountNumber,bankDetails.bankCode,amountInKobo, "NGN", reference, "Driver Payout")
-            if(transfer){
-                const updatedWithdrawal = await prisma.$transaction(async(tx)=>{
-                    await tx.withdrawal.update({
-                        where: {id: withdrawalId},
-                        data: {status: WithdrawalStatus.completed},
+      if (transfer) {
+          await prisma.$transaction(async (tx) => {
+              await tx.withdrawal.update({
+                  where: { id: withdrawalId },
+                  data: { status: WithdrawalStatus.completed },
+              });
 
-                    })
+              await tx.wallet.update({
+                  where: { id: walletId },
+                  data: { balance: { decrement: amount } }
+              });
 
-                    await tx.wallet.update({
-                        where: {id: walletId},
-                        data:{balance: {decrement: amount}}
-                    })
+              await tx.walletTransaction.create({
+                  data: {
+                      walletId,
+                      type: 'debit',
+                      amount,
+                      reference,
+                      status: 'completed'
+                  }
+              });
+          });
 
-                    await tx.walletTransaction.create({
-                        data: {
-                            walletId,
-                            type: 'debit',
-                            amount,
-                            reference,
-                            status: 'completed'
-                        }
-                    })
-                })
-                return updatedWithdrawal
-            }
-            else{
-                await prisma.withdrawal.update({
-                    where: {id: withdrawalId},
-                    data: {status: WithdrawalStatus.failed}
-                })
-                throw new Error("Payout failed via Paystack")
-            }
+          console.log('Withdrawal successful');
+          channel.ack(msg);
+      } else {
+          throw new Error("Payout failed via Paystack");
+      }
+  } catch (error: any) {
+      console.error(error.message);
 
+      if (retries < MAX_RETRIES) {
+          console.log(`Retrying... Attempt ${retries + 1}/${MAX_RETRIES}`);
+          
+      
+          channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify({ ...jobData, retries: retries + 1 })), { persistent: true });
+      } else {
+          console.error("Max retries reached. Marking withdrawal as failed.");
+          
+          await prisma.withdrawal.update({
+              where: { id: withdrawalId },
+              data: { status: WithdrawalStatus.failed }
+          });
 
-        }
+          
+      }
+      channel.nack(msg, false, false); 
+  }
+};
 
-        catch{
-
-
-        }
-
-
-
-
-
-
-
-    }
-
-}
 
 
 const startWorker = async () => {
