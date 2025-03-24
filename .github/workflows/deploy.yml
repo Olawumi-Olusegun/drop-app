@@ -34,13 +34,13 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Update ECS Task Definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ./ecs-task-definition.json #${{ secrets.ECS_TASK_DEFINITION }}
-          container-name: "drop-ride"
-          image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
+      # - name: Update ECS Task Definition
+      #   id: task-def
+      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
+      #   with:
+      #     task-definition: ./ecs-task-definition.json #${{ secrets.ECS_TASK_DEFINITION }}
+      #     container-name: "drop-ride"
+      #     image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
