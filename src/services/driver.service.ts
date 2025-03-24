@@ -294,7 +294,7 @@ export const goOnline = async(userId: string)=>{
 export const getDriverProfile = async (userId: string) => {
 
   const driver = await prisma.driver.findUnique({
-    where: { userId }
+    where: {  userId: userId }
   })
 
   if (!driver) {
