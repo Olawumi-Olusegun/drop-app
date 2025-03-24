@@ -46,7 +46,7 @@ app.use(passport.session())
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',  'http://13.60.191.204:5150'],
+    origin: ['*'],//['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',  'http://13.60.191.204:5150'],
     optionsSuccessStatus: 200,
     credentials: true,
   })
@@ -65,7 +65,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/", passportRoutes);
 
 
-app.use(rejectBlockedUsers);
+//app.use(rejectBlockedUsers);
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
 app.use('/api/v1/admin', adminRoutes);
