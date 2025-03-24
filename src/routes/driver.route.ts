@@ -54,19 +54,19 @@ router.post(
     validateUpdateDriverDocuments,
     DocumentUploadController
 );
-router.post("/online", authenticateUser,rejectSuspendedDrivers,validateGoOnline, goOnlineController)
-router.get('/profile', authenticateUser, rejectSuspendedDrivers,validateDriverProfile, getDriverProfileController)
-router.get("/dashboard", authenticateUser, rejectSuspendedDrivers,validateDriverDashboard, getDriverDashboardController);
-router.get("/available", authenticateUser, rejectSuspendedDrivers,validateAvailableRides, getAvailableRidesController);
-router.get("/ride/:rideId", authenticateUser, rejectSuspendedDrivers,validateRideIdParam, getRideDetailsController);
-router.get("/user/:userId", authenticateUser, rejectSuspendedDrivers,validateGetUserDetails, getUserDetailsController);
-router.post("/:rideId/accept", authenticateUser, rejectSuspendedDrivers,validateAcceptRide, acceptRideController);
-router.post("/:rideId/cancel", authenticateUser, rejectSuspendedDrivers,validateCancelBid, cancelRideBidController);
-router.post("/:rideId/start", authenticateUser, rejectSuspendedDrivers,validateStartRide, startRideController);
-router.post("/:rideId/complete", authenticateUser, rejectSuspendedDrivers,validateCompleteRide, completeRideController);
-router.post("/:userId/rate", authenticateUser, rejectSuspendedDrivers,validateRateUser, rateUserController);
-router.get("/rides", authenticateUser, rejectSuspendedDrivers,validateDriverRideHistory, getDriverRideHistoryController);
-router.get('/wallet', authenticateUser, rejectSuspendedDrivers,validateDriverWallet, getDriverWalletController)
-router.post('/addbank', authenticateUser, rejectSuspendedDrivers, validateBankDetails ,  saveBankDetails)
-router.post('/request-withdrawal', authenticateUser, rejectSuspendedDrivers, validateWithdrawalRequest,requestWithdrawalController)
+router.post("/online", authenticateUser,validateGoOnline, goOnlineController)
+router.get('/profile', authenticateUser, validateDriverProfile, getDriverProfileController)
+router.get("/dashboard", authenticateUser, validateDriverDashboard, getDriverDashboardController);
+router.get("/available", authenticateUser, validateAvailableRides, getAvailableRidesController);
+router.get("/ride/:rideId", authenticateUser, validateRideIdParam, getRideDetailsController);
+router.get("/user/:userId", authenticateUser, validateGetUserDetails, getUserDetailsController);
+router.post("/:rideId/accept", authenticateUser, validateAcceptRide, acceptRideController);
+router.post("/:rideId/cancel", authenticateUser, validateCancelBid, cancelRideBidController);
+router.post("/:rideId/start", authenticateUser, validateStartRide, startRideController);
+router.post("/:rideId/complete", authenticateUser, validateCompleteRide, completeRideController);
+router.post("/:userId/rate", authenticateUser, validateRateUser, rateUserController);
+router.get("/rides", authenticateUser, validateDriverRideHistory, getDriverRideHistoryController);
+router.get('/wallet', authenticateUser, validateDriverWallet, getDriverWalletController)
+router.post('/addbank', authenticateUser,  validateBankDetails ,  saveBankDetails)
+router.post('/request-withdrawal', authenticateUser,  validateWithdrawalRequest,requestWithdrawalController)
 export default router;
