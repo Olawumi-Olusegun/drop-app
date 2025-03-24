@@ -32,7 +32,7 @@ const PORT = Number(process.env.PORT || "5150");
 
 const app: Application = express();
 
-//app.disable('x-powered-by');
+app.disable('x-powered-by');
 app.use(express.json());
 app.use(session({
   secret: process.env.EXPRESS_SESSION_SECRET!,
@@ -44,13 +44,13 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 app.use(morgan("dev"));
-// app.use(
-//   cors({
-//     origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',  'http://13.60.191.204:5150'],
-//     optionsSuccessStatus: 200,
-//     //credentials: true,
-//   })
-// );
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',  'http://drop-ride-service-1945911928.eu-north-1.elb.amazonaws.com'],
+    optionsSuccessStatus: 200,
+    credentials: true,
+  })
+);
 
 
 app.use(cookieParser());
