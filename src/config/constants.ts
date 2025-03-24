@@ -37,6 +37,7 @@ const CONSTANTS = {
     AWS_ACCESS_KEY_ID: process.env.DATABASE_PROVIDER || "",
     AWS_SECRET_ACCESS_KEY: process.env.DATABASE_PROVIDER || "",
     AWS_S3_BUCKET_REGION: process.env.DATABASE_PROVIDER || "",
+    COMMISION_RATE:0.085
 }
 
 export default CONSTANTS;

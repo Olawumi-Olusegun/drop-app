@@ -16,9 +16,11 @@ import { DocumentUploadPayload, DriverRegistrationInput } from "../types";
 import { generatePresignedUrl } from "../utils/s3";
 import { Response } from "express";
 import haversine from "haversine-distance";
-import { COMMISION_RATE } from '../constants';
+
 import { chargeSavedCard } from "../utils/paystackhelpers";
 import { publishToQueue } from "../jobs/rabbbitMqJob";
+import CONSTANTS from "../config/constants";
+
 
 const prisma = new PrismaClient();
 
@@ -514,11 +516,14 @@ export const completeRide = async (
   userId: string,
   paymentMethod: PaymentMethod
 ) => {
+
+  
   const finalFareAmount = parseFloat(finalFare);
-  const netAmount = finalFareAmount * (1 - COMMISION_RATE);
+  const commission = finalFareAmount * CONSTANTS.COMMISION_RATE
+  const netAmount = finalFareAmount - commission;
   const reference = `ride-${rideId}-${Date.now()}`;
 
-  // Wrap critical operations in one transaction and return needed rider details.
+  
   const { rideUpdate, riderEmail, riderId } = await prisma.$transaction(async (tx) => {
     const ride = await tx.ride.findUnique({
       where: { id: rideId },
@@ -544,7 +549,7 @@ export const completeRide = async (
     }
 
    
-    await tx.payment.create({
+    const payment = await tx.payment.create({
       data: {
         rideId,
         userId: ride.user.id,
@@ -556,31 +561,29 @@ export const completeRide = async (
       },
     });
 
+    await tx.user.update({
+      where: { id: ride.user.id },
+      data: { totalCompletedRides: { increment: 1 } },
+    });
+
     // For cash payments, update the driver's wallet immediately.
     if (paymentMethod === PaymentMethod.cash) {
       await tx.wallet.update({
         where: { userId: userId },
-        data: { balance: { increment: netAmount } },
+        data: { balance: { decrement : commission } },
       });
       const driverWallet = await tx.wallet.findUnique({ where: { userId: userId } });
       if (!driverWallet) throw new Error("Driver wallet not found");
       await tx.walletTransaction.create({
         data: {
           walletId: driverWallet.id,
-          type: 'credit',
-          amount: netAmount,
-          reference,
+          type: 'debit',
+          amount: commission,
+          reference: `commission-${reference}`,
           status: 'completed',
         },
       });
     }
-
-    // Increment rider's total completed rides.
-    await tx.user.update({
-      where: { id: ride.user.id },
-      data: { totalCompletedRides: { increment: 1 } },
-    });
-
     // Return the updated ride and rider details.
     return { rideUpdate, riderEmail: ride.user.email, riderId: ride.user.id };
   });
@@ -641,23 +644,6 @@ export const rateUser = async (
 };
 
 
-
-export const getDriverWallet = async (driverId: string) => {
-  const wallet = await prisma.driverWallet.findUnique({
-    where: { driverId }
-  })
-
-  if (!wallet) {
-    return await prisma.driverWallet.create({
-      data: {
-        driverId,
-        balance: 0.0
-      }
-    })
-  }
-
-  return wallet;
-}
 export const getDriverRideHistory = async (
   driverId: string,
   page: number = 1,

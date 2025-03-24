@@ -4,12 +4,12 @@ import {
     cancelRideBidController,
     completeRideController,
     DocumentUploadController,
+    FetchDriverWallet,
     getAvailableRidesController,
     getDriverDashboardController,
     getDriverProfileController,
     getDriverRideHistoryController,
     getDriversController,
-    getDriverWalletController,
     getRideDetailsController,
     getUserDetailsController,
     goOnlineController,
@@ -66,7 +66,7 @@ router.post("/:rideId/start", authenticateUser, validateStartRide, startRideCont
 router.post("/:rideId/complete", authenticateUser, validateCompleteRide, completeRideController);
 router.post("/:userId/rate", authenticateUser, validateRateUser, rateUserController);
 router.get("/rides", authenticateUser, validateDriverRideHistory, getDriverRideHistoryController);
-router.get('/wallet', authenticateUser, validateDriverWallet, getDriverWalletController)
+router.get('/wallet', authenticateUser, validateDriverWallet, FetchDriverWallet)
 router.post('/addbank', authenticateUser,  validateBankDetails ,  saveBankDetails)
 router.post('/request-withdrawal', authenticateUser,  validateWithdrawalRequest,requestWithdrawalController)
 export default router;
