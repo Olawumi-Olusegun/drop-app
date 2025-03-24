@@ -46,7 +46,7 @@ app.use(passport.session())
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',  'http://13.60.191.204:5150'],
     optionsSuccessStatus: 200,
     credentials: true,
   })
