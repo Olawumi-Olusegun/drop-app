@@ -301,17 +301,6 @@ enum DriverType {
   professionalDriver
 }
 
-enum RegistrationStatus {
-  pending
-  approved
-  rejected
-}
-
-enum BiddingType {
-  instant
-  scheduled
-}
-
 model CourierService {
   id                  String        @id @default(uuid())
   imageUrl            String?
