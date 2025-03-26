@@ -46,8 +46,8 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: #${{ secrets.ECS_SERVICE_NAME }}
-          cluster: #${{ secrets.ECS_CLUSTER_NAME }}
+          service: drop-ride-service #${{ secrets.ECS_SERVICE_NAME }}
+          cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
 
   build-Chargeworker:
@@ -91,7 +91,7 @@ jobs:
         with:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
           service: cardchargeWorker #${{ secrets.ECS_SERVICE_NAME_CARDCHARGEWORKER }}
-          cluster: #${{ secrets.ECS_CLUSTER_NAME }}
+          cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
 
 
@@ -138,5 +138,5 @@ jobs:
         with:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
           service: cardchargeWorker #${{ secrets.ECS_SERVICE_NAME_WITHDRAWALWORKER }}
-          cluster: #${{ secrets.ECS_CLUSTER_NAME }}
+          cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
