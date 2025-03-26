@@ -7,7 +7,7 @@ import { error } from 'console';
 
 const QUEUE_NAME = "withdrawalQueue"
 const PAYSTACK_PAYOUT_URL = 'https://api.paystack.co/transfer'
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqps://ofqjltpz:GpsSYhlgemewBlYj-uZdF-cIXmiURZI5@kebnekaise.lmq.cloudamqp.com/ofqjltpz';
 const MAX_RETRIES = 3
 const transferToDriver = async(
 

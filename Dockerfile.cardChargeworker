@@ -1,0 +1,31 @@
+# Use Node.js LTS base image
+FROM node:18
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies (omit dev dependencies for production)
+RUN npm ci 
+
+# Copy Prisma schema and .env file
+COPY ./prisma/schema.prisma ./prisma/schema.prisma
+#COPY .env ./
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Copy the entire application code into the container
+COPY . .
+
+# Build the TypeScript application (compiling to the "dist" directory)
+RUN npx tsc
+
+# No ports to expose for background workers
+ 
+
+# Set the default command to run the worker (adjust the path to your worker file as necessary)
+
+CMD ["node",  "build/workers/cardChargeWorker.js"]

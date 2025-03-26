@@ -1,0 +1,176 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:025066242704:task-definition/drop-ride-task-definition:14",
+    "containerDefinitions": [
+        {
+            "name": "drop-ride",
+            "image": "025066242704.dkr.ecr.eu-north-1.amazonaws.com/drop-ride:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "drop-ride_5150",
+                    "containerPort": 5150,
+                    "hostPort": 5150,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "GOOGLE_CLIENT_SECRET",
+                    "value": "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"
+                },
+                {
+                    "name": "POSTMARK_SERVER_TOKEN",
+                    "value": "976947f0-64bd-41a4-8345-e9052618db9f"
+                },
+                {
+                    "name": "PORT",
+                    "value": "5150"
+                },
+                {
+                    "name": "GOOGLE_CLIENT_ID",
+                    "value": "879215474277-rhp7g3663m5m9int13htmd6kbu3sorvj.apps.googleusercontent.com"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "value": "vn/GspUmS2K+ECNwylQJLsjAmwnT9s6uWfaXgKT8"
+                },
+                {
+                    "name": "KUDISMS_USERNAME",
+                    "value": "123"
+                },
+                {
+                    "name": "AWS_S3_BUCKET_REGION",
+                    "value": "eu-north-1"
+                },
+                {
+                    "name": "AWS_S3_BUCKET_NAME",
+                    "value": "driver-documents"
+                },
+                {
+                    "name": "EXPRESS_SESSION_SECRET",
+                    "value": "9C4B9A12D232655421ED96C7E73BE"
+                },
+                {
+                    "name": "BACKEND_URL",
+                    "value": "https://drop-app-ytc9.onrender.com"
+                },
+                {
+                    "name": "KUDISMS_API_KEY",
+                    "value": "123"
+                },
+                {
+                    "name": "JWT_ACCESS_TOKEN_SECRET",
+                    "value": "2D6F27AE97F58B25784271EACE5CE"
+                },
+                {
+                    "name": "DATABASE_PROVIDER",
+                    "value": "postgresql"
+                },
+                {
+                    "name": "PAYSTACK_SECRET_KEY",
+                    "value": "sk_test_72890f8173e1bbedc42b6cb7c419bab801788d47"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://drop_app_owner:npg_dkOD6GFlU2JM@ep-orange-term-a5ayhyb6-pooler.us-east-2.aws.neon.tech/drop_app?sslmode=require"
+                },
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "value": "AKIAQLVQQQKIP5CH6WNS"
+                },
+                {
+                    "name": "JWT_SECRET",
+                    "value": "2D6F27AE97F58B25784271EACE5CE"
+                },
+                {
+                    "name": "JWT_REFRESH_TOKEN_SECRET",
+                    "value": "8FF4DCCDC42A5A12F8A1BAEE85DD8"
+                },
+                {
+                    "name": "KUDISMS_API_URL",
+                    "value": "https://account.kudisms.net/api/"
+                },
+                {
+                    "name": "KUDISMS_SENDER_ID",
+                    "value": "123"
+                },
+                {
+                    "name": "DROP_INNOVATION_EMAIL",
+                    "value": "contact@ridedrop.ng"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/drop-ride-task-definition",
+                    "mode": "non-blocking",
+                    "awslogs-create-group": "true",
+                    "max-buffer-size": "25m",
+                    "awslogs-region": "eu-north-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "drop-ride-task-definition",
+    "taskRoleArn": "arn:aws:iam::025066242704:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::025066242704:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 14,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.28"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "registeredAt": "2025-03-24T18:18:52.412Z",
+    "registeredBy": "arn:aws:iam::025066242704:user/Femi",
+    "tags": []
+}

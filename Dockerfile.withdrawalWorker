@@ -8,7 +8,14 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies (omit dev dependencies for production)
-RUN npm ci --omit=dev
+RUN npm ci 
+
+# Copy Prisma schema and .env file
+COPY ./prisma/schema.prisma ./prisma/schema.prisma
+#COPY .env ./
+
+# Generate Prisma Client
+RUN npx prisma generate
 
 # Copy the entire application code into the container
 COPY . .
@@ -17,7 +24,7 @@ COPY . .
 RUN npx tsc
 
 # No ports to expose for background workers
-# EXPOSE 5150  <-- Not needed
+  
 
 # Set the default command to run the worker (adjust the path to your worker file as necessary)
-CMD ["node", "build/workers/withdrawalWorker.js", "build/workers/cardChargeWorker.js"]
+CMD ["node", "build/workers/withdrawalWorker.js"]

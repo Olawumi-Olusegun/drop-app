@@ -376,7 +376,7 @@ export const getAvailableRides = async (
       },
     },
     orderBy: {
-      createdAt: "asc",
+      createdAt: "desc",
     },
   });
 

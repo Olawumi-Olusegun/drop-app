@@ -5,7 +5,7 @@ import prisma from '../config/db';
 
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-const RABBITMQ_URL = process.env.RABBITMQ_URL  || 'amqps://ofqjltpz:GpsSYhlgemewBlYj-uZdF-cIXmiURZI5@kebnekaise.lmq.cloudamqp.com/ofqjltpz';
+const RABBITMQ_URL =  process.env.RABBITMQ_URL ||'amqps://ofqjltpz:GpsSYhlgemewBlYj-uZdF-cIXmiURZI5@kebnekaise.lmq.cloudamqp.com/ofqjltpz';
 const QUEUE_NAME = 'cardChargeQueue';
 
 

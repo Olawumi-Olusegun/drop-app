@@ -19,6 +19,7 @@ export interface AuthRequest extends Request {
   }
 
 export type VerificationType = 'NIN' | 'Passport' | 'IdCard'
+export type DeliveryVehicle = 'Car' | 'Motorcycle'
 export interface DriverRegistrationInput {
   userId: string;
   verificationType: VerificationType
@@ -44,6 +45,34 @@ export interface DriverRegistrationInput {
   carColour: string;
 }
 
+export interface CourierDriverRegistrationInput {
+  userId: string;
+  verificationType: VerificationType;
+  deliveryVehicle: DeliveryVehicle;
+
+
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  nationality: string;
+  dateOfBirth: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  issuingCountry: string;
+  documentType: string;
+  nin?: string;
+  licenseNumber: string;
+  licenseExpiryDate: string;
+  carBrand: string;
+  motorcycleBrand?: string;
+  carModel: string;
+  licensePlateNumber: string;
+  carColour: string;
+
+}
+
 export interface DocumentUploadPayload {
   driverId: string;
   documents: {
@@ -55,7 +84,6 @@ export interface DocumentUploadPayload {
     carPictureUrl: string;
     vehicleRegistration: string;
     roadWorthiness?: string;
-
 
   }
 }

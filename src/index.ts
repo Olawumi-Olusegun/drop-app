@@ -11,6 +11,7 @@ import driverRoutes from "./routes/driver.route";
 import rideRoutes from "./routes/ride.route";
 import adminRoutes from "./routes/admin.route";
 import courierRoutes from "./services/courier/routes/courier.route";
+import courierDrivers from "./services/courier/routes/driver.route"
 import passportRoutes from "./routes/passport.route";
 import scheduleRideRoutes from "./routes/schedule-ride.route";
 import userRoutes from "./routes/user.route"
@@ -71,6 +72,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use("/api/v1/scheduled-rides", scheduleRideRoutes);
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/couriers', courierRoutes)
+app.use('/api/v1/couriers/drivers', courierDrivers)
 
 
 // Catch-all middleware for 404 routes
