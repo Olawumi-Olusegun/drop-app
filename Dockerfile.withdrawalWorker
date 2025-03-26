@@ -15,7 +15,7 @@ COPY ./prisma/schema.prisma ./prisma/schema.prisma
 #COPY .env ./
 
 # Generate Prisma Client
-RUN npx prisma migrate deploy && npm run db:sync 
+RUN npx prisma generate
 
 # Copy the entire application code into the container
 COPY . .
