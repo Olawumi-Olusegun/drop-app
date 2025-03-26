@@ -38,7 +38,7 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ./ecs-task-definition.json #${{ secrets.ECS_TASK_DEFINITION }}
+          task-definition: ./drop-ride.json #${{ secrets.ECS_TASK_DEFINITION }}
           container-name: "drop-ride-task-definition"
           image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
 
@@ -76,7 +76,7 @@ jobs:
           IMAGE_TAG: latest
         run: |
           docker build -f Dockerfile.cardChargeworker -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/@ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update ECS Task Definition for Worker
         id: task-def-worker
@@ -123,7 +123,7 @@ jobs:
           IMAGE_TAG: latest
         run: |
           docker build -f Dockerfile.withdrawalWorker -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/@ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update ECS Task Definition for Worker
         id: task-def-worker
