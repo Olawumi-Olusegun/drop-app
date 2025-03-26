@@ -39,7 +39,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ./drop-ride.json #${{ secrets.ECS_TASK_DEFINITION }}
-          container-name: "drop-ride-task-definition"
+          container-name: "drop-ride"
           image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
 
       - name: Deploy to Amazon ECS
@@ -84,7 +84,7 @@ jobs:
         with:
           task-definition: ./cardCharge.json #${{ secrets.ECS_TASK_DEFINITION_CARDCHARGEWORKER }}
           container-name: "cardcharge"
-          image: ${{ steps.login-ecr-worker.outputs.registry }}/$ECR_REPOSITORY:latest  # cardcharge
+          image: ${{ steps.login-ecr-worker.outputs.registry }}/cardcharge:latest  # cardcharge
 
       - name: Deploy to Amazon ECS for Worker
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -131,7 +131,7 @@ jobs:
         with:
           task-definition: ./withdrawalWorker.json #${{ secrets.ECS_TASK_DEFINITION_CARDCHARGEWORKER }}
           container-name: "withdrawalworker"
-          image: ${{ steps.login-ecr-worker.outputs.registry }}/$ECR_REPOSITORY:latest  # cardcharge
+          image: ${{ steps.login-ecr-worker.outputs.registry }}/withdrawalworker:latest  # cardcharge
 
       - name: Deploy to Amazon ECS for Worker
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
