@@ -111,8 +111,8 @@ model OTP {
 model Driver {
   id                  String                @id @default(uuid())
   userId              String                @unique
-  deliveryVehicle     DeliveryVehicle?
-  driverType          DriverType
+  //deliveryVehicle     DeliveryVehicle?
+  //driverType          DriverType
   firstName           String
   middleName          String?
   lastName            String
