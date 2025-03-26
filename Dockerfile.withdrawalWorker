@@ -27,4 +27,4 @@ RUN npx tsc
   
 
 # Set the default command to run the worker (adjust the path to your worker file as necessary)
-CMD ["node", "build/workers/withdrawalWorker.js"]
+CMD ["npm", "run",  "npx prisma migrate deploy && npm run db:sync && node build/workers/withdrawalWorker.js"]
