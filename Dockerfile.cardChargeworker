@@ -28,4 +28,4 @@ RUN npx tsc
 
 # Set the default command to run the worker (adjust the path to your worker file as necessary)
 
-CMD ["npm", "run",  "npx prisma migrate deploy && npm run db:sync && node build/workers/cardChargeWorker.js"]
+CMD ["npm", "run", "start:cardchargeworker"]
