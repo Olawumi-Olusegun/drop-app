@@ -1,9 +1,9 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:025066242704:task-definition/withdrawalworker:1",
+    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:025066242704:task-definition/withdrawalworker:4",
     "containerDefinitions": [
         {
             "name": "withdrawalworker",
-            "image": "025066242704.dkr.ecr.eu-north-1.amazonaws.com/withdrawalworker",
+            "image": "025066242704.dkr.ecr.eu-north-1.amazonaws.com/withdrawalworker:latest",
             "cpu": 0,
             "portMappings": [],
             "essential": true,
@@ -13,14 +13,16 @@
                     "value": "sk_test_72890f8173e1bbedc42b6cb7c419bab801788d47"
                 },
                 {
+                    "name": "RABBITMQ_URL",
+                    "value": "amqps://ofqjltpz:GpsSYhlgemewBlYj-uZdF-cIXmiURZI5@kebnekaise.lmq.cloudamqp.com/ofqjltpz"
+                },
+                {
                     "name": "DATABASE_URL",
-                    "value": "postgresql://drop_app_owner:npg_dkOD6GFlU2JM@ep-orange-term-a5ayhyb6-pooler.us-east-2.aws.neon.tech/drop_app?sslmode=require"
+                    "value": "prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiODZjODllYzgtOWM0OC00NWU4LTk4YWItNDFhNjY0ZjAyYTYzIiwidGVuYW50X2lkIjoiOTUwNzMyNTg0NWY4YjAzNzE3OTMzMGE1ZjQ0NTIzODBjMWViMzFkZTM3Y2VhYjYzMWI3ZjYwMzRjNDA2ZTZlNCIsImludGVybmFsX3NlY3JldCI6IjI4YTg1Mzg4LTJhY2UtNDRkMS1iZmM4LTE0OWQxNjRkNjI3OCJ9.mfT1pDdYrevNttL_dbnfOOuAJj1aW1yiJq_-Cv-Kmc8"
                 }
             ],
-            "environmentFiles": [],
             "mountPoints": [],
             "volumesFrom": [],
-            "ulimits": [],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -39,7 +41,7 @@
     "family": "withdrawalworker",
     "executionRoleArn": "arn:aws:iam::025066242704:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
-    "revision": 1,
+    "revision": 4,
     "volumes": [],
     "status": "ACTIVE",
     "requiresAttributes": [
@@ -85,7 +87,7 @@
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
     },
-    "registeredAt": "2025-03-26T13:53:54.312Z",
+    "registeredAt": "2025-03-27T11:42:59.169Z",
     "registeredBy": "arn:aws:iam::025066242704:user/Femi",
     "tags": []
 }

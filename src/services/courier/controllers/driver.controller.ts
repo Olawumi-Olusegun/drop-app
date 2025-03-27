@@ -24,14 +24,14 @@ export const registerCourierDriverController = async (req: Request, res: Respons
           carModel,
           licensePlateNumber,
           carColour,
-          deliveryVehicle
+          transportType
         } = req.body;
 
 
          const result = await registerCourierDriver({
               userId,
               verificationType,
-              deliveryVehicle,
+              transportType,
               firstName,
               middleName,
               lastName,

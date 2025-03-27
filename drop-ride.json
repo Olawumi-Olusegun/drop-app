@@ -1,5 +1,5 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:025066242704:task-definition/drop-ride-task-definition:14",
+    "taskDefinitionArn": "arn:aws:ecs:eu-north-1:025066242704:task-definition/drop-ride-task-definition:17",
     "containerDefinitions": [
         {
             "name": "drop-ride",
@@ -49,12 +49,12 @@
                     "value": "driver-documents"
                 },
                 {
-                    "name": "EXPRESS_SESSION_SECRET",
-                    "value": "9C4B9A12D232655421ED96C7E73BE"
-                },
-                {
                     "name": "BACKEND_URL",
                     "value": "https://drop-app-ytc9.onrender.com"
+                },
+                {
+                    "name": "EXPRESS_SESSION_SECRET",
+                    "value": "9C4B9A12D232655421ED96C7E73BE"
                 },
                 {
                     "name": "KUDISMS_API_KEY",
@@ -74,7 +74,7 @@
                 },
                 {
                     "name": "DATABASE_URL",
-                    "value": "postgresql://drop_app_owner:npg_dkOD6GFlU2JM@ep-orange-term-a5ayhyb6-pooler.us-east-2.aws.neon.tech/drop_app?sslmode=require"
+                    "value": "prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiODZjODllYzgtOWM0OC00NWU4LTk4YWItNDFhNjY0ZjAyYTYzIiwidGVuYW50X2lkIjoiOTUwNzMyNTg0NWY4YjAzNzE3OTMzMGE1ZjQ0NTIzODBjMWViMzFkZTM3Y2VhYjYzMWI3ZjYwMzRjNDA2ZTZlNCIsImludGVybmFsX3NlY3JldCI6IjI4YTg1Mzg4LTJhY2UtNDRkMS1iZmM4LTE0OWQxNjRkNjI3OCJ9.mfT1pDdYrevNttL_dbnfOOuAJj1aW1yiJq_-Cv-Kmc8"
                 },
                 {
                     "name": "AWS_ACCESS_KEY_ID",
@@ -112,7 +112,8 @@
                     "max-buffer-size": "25m",
                     "awslogs-region": "eu-north-1",
                     "awslogs-stream-prefix": "ecs"
-                }
+                },
+                "secretOptions": []
             },
             "systemControls": []
         }
@@ -121,7 +122,7 @@
     "taskRoleArn": "arn:aws:iam::025066242704:role/ecsTaskExecutionRole",
     "executionRoleArn": "arn:aws:iam::025066242704:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
-    "revision": 14,
+    "revision": 17,
     "volumes": [],
     "status": "ACTIVE",
     "requiresAttributes": [
@@ -170,7 +171,7 @@
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
     },
-    "registeredAt": "2025-03-24T18:18:52.412Z",
+    "registeredAt": "2025-03-27T11:37:51.686Z",
     "registeredBy": "arn:aws:iam::025066242704:user/Femi",
     "tags": []
 }

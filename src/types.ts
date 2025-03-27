@@ -1,4 +1,4 @@
-//import { verificationType } from "@prisma/client";
+//import { verificationType, TransportType } from '@prisma/client';
 import { Request } from "express";
 import passport from 'passport';
 
@@ -19,7 +19,7 @@ export interface AuthRequest extends Request {
   }
 
 export type VerificationType = 'NIN' | 'Passport' | 'IdCard'
-export type DeliveryVehicle = 'Car' | 'Motorcycle'
+export type TransportType=  'motorCycle' | 'car'
 export interface DriverRegistrationInput {
   userId: string;
   verificationType: VerificationType
@@ -48,9 +48,7 @@ export interface DriverRegistrationInput {
 export interface CourierDriverRegistrationInput {
   userId: string;
   verificationType: VerificationType;
-  deliveryVehicle: DeliveryVehicle;
-
-
+  transportType: TransportType;
   firstName: string;
   middleName: string;
   lastName: string;

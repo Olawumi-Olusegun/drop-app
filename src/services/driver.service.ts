@@ -1,5 +1,6 @@
 import {
   BidStatus,
+  DriverType,
   OnlineStatus,
   PaymentMethod,
   PaymentStatus,
@@ -152,6 +153,7 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
     const createdDriver = await tx.driver.create({
       data: {
         userId: data.userId,
+        driverType: DriverType.instantRide,
         firstName: data.firstName,
         middleName: data.middleName,
         lastName: data.lastName,

@@ -1,4 +1,4 @@
-import { RegistrationStatus } from "@prisma/client";
+import {  DriverType, RegistrationStatus } from "@prisma/client";
 import prisma from "../../../config/db";
 import { CourierDriverRegistrationInput, DocumentUploadPayload, DriverRegistrationInput } from "../../../types";
 
@@ -34,6 +34,8 @@ export const registerCourierDriver = async (data:CourierDriverRegistrationInput)
     const createdDriver = await tx.driver.create({
       data: {
         userId: data.userId,
+        driverType: DriverType.courier,
+        transportType: data.transportType,
         firstName: data.firstName,
         middleName: data.middleName,
         lastName: data.lastName,

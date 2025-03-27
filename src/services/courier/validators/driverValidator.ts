@@ -2,7 +2,7 @@ import { body, validationResult, query, param } from 'express-validator';
 import { Request, Response, NextFunction, } from 'express';
 
 const allowedVerificationTypes = ['NIN', 'Passport', 'IdCard'];
-const allowedVehicleTypes = ["Car", "Motorcycle"]
+const allowedVehicleTypes = ['motorCycle', 'car']
 
 export const validateCourierDriverRegistration = [
     body('userId').isUUID().withMessage('userId must be a valid UUID'),
@@ -29,7 +29,7 @@ export const validateCourierDriverRegistration = [
     body('carModel').notEmpty().withMessage('carModel is required'),
     body('licensePlateNumber').notEmpty().withMessage('licensePlateNumber is required'),
     body('carColour').notEmpty().withMessage('carColour is required'),
-    body('deliveryVehicle').isIn(allowedVehicleTypes).notEmpty().withMessage('deliveryVehicle is required'),
+    body('transportType').isIn(allowedVehicleTypes).notEmpty().withMessage('transportType is required'),
     (req: Request, res: Response, next: NextFunction) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
