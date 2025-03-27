@@ -65,6 +65,10 @@ export const scheduleRide = async (req: Request, res: Response) => {
 export const getScheduledRides = async (req: Request, res: Response) => {
 
   try {
+
+    const drivers = await prisma.driver.findMany();
+    console.log(drivers);
+
     const rides = await prisma.scheduledRide.findMany({
       where: { status: "pending" },
       orderBy: { scheduledDateTime: "asc" },

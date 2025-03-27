@@ -62,6 +62,7 @@ model Ride {
   dropoffLocation  String
   dropoffLatitude  Float
   dropoffLongitude Float
+  paymentMethod    PaymentMethod @default(card)
   finalFare        Float?        @default(0.0)
   userTimezone     String
   expiresAt        DateTime?

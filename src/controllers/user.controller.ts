@@ -3,8 +3,6 @@ import { Statuscode } from "../utils/Statuscode";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import prisma from "../config/db";
 import { saveCardDetails, saveOrUpateBankDetails } from '../services/user.service';
-import { HttpStatusCode } from "axios";
-import { error } from "console";
 
 
 export const updateUserLocation = async (req: Request, res: Response) => {
