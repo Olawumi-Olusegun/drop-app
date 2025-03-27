@@ -4,6 +4,7 @@ import {
     cancelRideBidController,
     completeRideController,
     DocumentUploadController,
+    driverGetRiderDetails,
     getAvailableRidesController,
     getDriverDashboardController,
     getDriverProfileController,
@@ -38,10 +39,10 @@ import {
     validateWithdrawalRequest,
 } from "../validators/driverValidator";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
-import { UserRole } from "@prisma/client";
 import { rejectSuspendedDrivers } from "../middlewares/suspended.driver.middleware";
 import { validateBankDetails } from "../validators/userValidator";
 import { saveBankDetails } from "../controllers/user.controller";
+import { UserRole } from "../types";
 
 const router = express.Router();
 
@@ -69,4 +70,8 @@ router.get("/rides", authenticateUser, validateDriverRideHistory, getDriverRideH
 router.get('/wallet', authenticateUser, validateDriverWallet, getDriverWalletController)
 router.post('/addbank', authenticateUser,  validateBankDetails ,  saveBankDetails)
 router.post('/request-withdrawal', authenticateUser,  validateWithdrawalRequest,requestWithdrawalController)
+
+
+// Added by dev Olusegun
+router.get('/driver-get-user-details', authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]),  driverGetRiderDetails)
 export default router;
