@@ -73,6 +73,7 @@ export const createCourier = async (req: Request, res: Response) => {
 
     return res.status(Statuscode.CREATED).json({ message: "Courier created", courier });
   } catch (error) {
+    console.log(error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message:  "Unknown error" });
   }
 };
@@ -97,6 +98,7 @@ export const getCouriers = async (req: Request, res: Response) => {
 
     return res.status(Statuscode.SUCCESS).json({ couriers });
   } catch (error) {
+    console.log(error)
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch couriers" });
   }
 };

@@ -120,9 +120,9 @@ export const cancelRide = async (req: Request, res: Response) => {
   export const getRideDetails = async (req: Request, res: Response) => {
 
     try {
-  
+
         const {  rideId } = req.params;
-    
+
         // Check if ride exists
         const ride = await prisma.ride.findUnique({ where: { id: rideId } });
   
