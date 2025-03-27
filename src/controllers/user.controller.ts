@@ -57,10 +57,13 @@ export const saveCardDetailController = async( req: Request, res: Response)=>{
     const {userId, reference} = req.body
     
     const updatedUser = await saveCardDetails(userId, reference)
-    res.status(200).json({updatedUser})
+    res.status(200).json({message: "Card Successfully Saved"})
   }
   catch(error: any){
     console.log('Error saving card details', error.message)
+    if(error.message === "Error Saving Card"){
+      return res.status(Statuscode.BAD_REQUEST).json({message: error.message})
+    }
     res.status(500).json({error: "Internal servor error"})
   }
 }

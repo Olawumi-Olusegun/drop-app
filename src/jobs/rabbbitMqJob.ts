@@ -16,6 +16,7 @@ export const publishToQueue = async (message: object, QUEUE_NAME: string) => {
   channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(message)), {
     persistent: true,
   });
+  console.log(`Message sent to ${QUEUE_NAME}`);
 }
 catch(error:any){
   console.error(error.message)
