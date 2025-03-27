@@ -73,5 +73,5 @@ router.post('/request-withdrawal', authenticateUser,  validateWithdrawalRequest,
 
 
 // Added by dev Olusegun
-router.get('/driver-get-user-details', authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]),  driverGetRiderDetails)
+router.post('/driver-get-user-details', authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]),  driverGetRiderDetails)
 export default router;
