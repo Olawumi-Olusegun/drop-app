@@ -560,3 +560,59 @@ export const createBid = async (req: Request, res: Response) => {
       .json({ message: "Server error" });
   }
 };
+
+// Added by dev Olusegun
+export const driverGetRiderDetails = async (req: Request, res: Response) => {
+  try {
+
+    const { riderId, driverId, rideId } = req.body;
+
+    const ride = await prisma.ride.findFirst({
+      where: {
+        id: rideId,
+        driver: driverId,
+        user: riderId,
+      }
+    });
+
+    if(!ride) {
+       res
+        .status(Statuscode.NOT_FOUND)
+        .json({ message: "Ride not found" });
+        return
+    }
+
+    // Check if the ride exists
+    const riderExist = await prisma.user.findUnique({
+      where: { id: riderId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phoneNumber: true,
+        onlineStatus: true,
+        role: true,
+        userTimezone: true,
+        profileImage: true,
+        country: true,
+        city: true,
+        createdAt: true,
+      },
+    });
+
+    if (!riderExist) {
+       res
+        .status(Statuscode.NOT_FOUND)
+        .json({ message: "Ride not found" });
+        return
+    }
+
+
+    return res.status(Statuscode.SUCCESS).json({ data: { rider: riderExist } });
+  } catch (error) {
+     res
+      .status(Statuscode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Server error" });
+      return
+  }
+};
