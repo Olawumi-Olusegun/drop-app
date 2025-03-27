@@ -4,7 +4,7 @@ import {
     cancelRideBidController,
     completeRideController,
     DocumentUploadController,
-    driverGetRiderDetails,
+    getDriverDetails,
     getAvailableRidesController,
     getDriverDashboardController,
     getDriverProfileController,
@@ -73,5 +73,5 @@ router.post('/request-withdrawal', authenticateUser,  validateWithdrawalRequest,
 
 
 // Added by dev Olusegun
-router.post('/driver-get-user-details', authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]),  driverGetRiderDetails)
+router.get('/get-driver-details/:driverId', authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]),  getDriverDetails)
 export default router;

@@ -562,43 +562,51 @@ export const createBid = async (req: Request, res: Response) => {
 };
 
 // Added by dev Olusegun
-export const driverGetRiderDetails = async (req: Request, res: Response) => {
+export const getDriverDetails = async (req: Request, res: Response) => {
   try {
+    const { driverId } = req.params;
 
-    const { riderId, driverId, rideId } = req.body;
-
-    const ride = await prisma.ride.findFirst({
-      where: {
-        id: rideId,
-        driver: driverId,
-        user: riderId,
-      }
-    });
-
-    if(!ride) {
+    if(!driverId) {
        res
         .status(Statuscode.NOT_FOUND)
-        .json({ message: "Ride not found" });
+        .json({ message: "Driver not found" });
         return
     }
 
     // Check if the ride exists
-    const riderExist = await prisma.user.findUnique({
-      where: { id: riderId },
+    const riderExist = await prisma.driver.findUnique({
+      where: { id: driverId },
       select: {
         id: true,
-        fullName: true,
-        email: true,
-        phoneNumber: true,
-        onlineStatus: true,
-        role: true,
-        userTimezone: true,
-        profileImage: true,
-        country: true,
+        nationality: true,
+        dateOfBirth: true,
+        fullAddress: true,
         city: true,
-        createdAt: true,
+        postalCode: true,
+        country: true,
+        totalCompletedRides: true,
+        averageRating: true,
+        registrationStatus: true,
+        registrationDate: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phoneNumber: true,
+            onlineStatus: true,
+            role: true,
+            userTimezone: true,
+            profileImage: true,
+            country: true,
+            city: true,
+            createdAt: true,
+          },
+        },
+        vehicles: true,
       },
     });
+    
 
     if (!riderExist) {
        res
@@ -607,8 +615,7 @@ export const driverGetRiderDetails = async (req: Request, res: Response) => {
         return
     }
 
-
-    return res.status(Statuscode.SUCCESS).json({ data: { rider: riderExist } });
+    return res.status(Statuscode.SUCCESS).json({ driverDetails: riderExist });
   } catch (error) {
      res
       .status(Statuscode.INTERNAL_SERVER_ERROR)
