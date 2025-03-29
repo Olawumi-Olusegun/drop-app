@@ -1,13 +1,6 @@
 import admin from './firebase';
 
-
-interface PushNotification {
-  fcmToken: string; 
-  title: string;
-  body: string;
-}
-export const sendPushNotification = async ({ fcmToken, title, body }: PushNotification) => {
-
+export const sendPushNotification = async (fcmToken: string, title: string, body: string) => {
   const message = {
     token: fcmToken,
     notification: { title, body },

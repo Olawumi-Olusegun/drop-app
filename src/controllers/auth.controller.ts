@@ -7,10 +7,9 @@ import { Statuscode } from "../utils/Statuscode";
 import { hashPassword, isPasswordValid } from "../utils/hashPassword";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { sendEmail } from "../utils/postMarkEmailService";
-import { PlatformType, Prisma } from "@prisma/client";
+import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
+import { Prisma } from "@prisma/client";
 import { expirationTime } from "../utils/timeExpiry";
-import { sendSMSWithInfoBip } from "../utils/sendSMSWithInfoBip";
-import { sendPushNotification } from "../utils/push-notification/sendNotification";
 
 /**
  * @desc signupWithPhoneNumber
@@ -102,15 +101,12 @@ export const signupWithPhoneNumber = async (req: Request, res: Response) => {
     }
 
     // Send OTP to phoneNumber via sms
-    // const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
+    const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
 
     // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
 
-    // const sendSMSWithKudiSMSResponse = await sendSMSWithTwilio('+2348012345678', `Your OTP is ${phoneNumberOTP}`);
-
-    // if(!sendSMSWithKudiSMSResponse) {
-    //   res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
-    //   return;
+    // if(!kudiSmsResponse) {
+    //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
     // }
 
     return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your phone." });
@@ -287,7 +283,7 @@ export const createPassword = async (req: Request, res: Response) => {
 
 export const signInWithEmail = async (req: Request, res: Response) => {
   // `identifier` can be either email or phoneNumber
-   const { identifier, password, fcmToken, platform } = req.body;
+   const { identifier, password } = req.body;
  
    try {
      // Find user by email or phoneNumber
@@ -296,12 +292,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
          OR: [{ email: identifier }, { phoneNumber: identifier }],
        },
      });
-
-     const testOTP = generateOTP();
-    // +12029106163
-     const sendSMSWithVonageResponse = await sendSMSWithInfoBip({ to: "+2347065066382", text: `Your OTP is ${testOTP}` });
-    //  console.log(sendSMSWithVonageResponse)
-
+ 
      if (!user || !user.password) {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
      }
@@ -336,20 +327,6 @@ export const signInWithEmail = async (req: Request, res: Response) => {
         data: { refreshToken, accessToken, onlineStatus: "online" },
       });
 
-      if(fcmToken.trim() && platform.trim()) {
-        await prisma.pushNotificationToken.upsert({
-          where: { userId: updatedUser.id },
-          update: { token: fcmToken, platformType: platform as PlatformType },
-          create: {
-            userId: updatedUser.id,
-            token: fcmToken,
-            platformType: PlatformType[platform as keyof typeof PlatformType],
-          },
-        });
-
-        await sendPushNotification({ fcmToken, title: "Drop Ride", body: "Test Notification! You are logged in" })
-      }
-
       const {
         id,
         fullName, 
@@ -364,7 +341,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
         profileImage,
       } = updatedUser;
 
-     res.status(Statuscode.SUCCESS).json({ 
+     return res.status(Statuscode.SUCCESS).json({ 
       message: "Signed in successfully",
       data: { 
         user: {
@@ -382,10 +359,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
             accessToken 
       }
      }});
-
-    //  const sendSMSWithKudiSMSResponse = await sendSMSWithTwilio('+2347065066383', `Your OTP is 1234`);
-    //  console.log(sendSMSWithKudiSMSResponse)
-     return 
+  
    } catch (error) {
      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
    }
@@ -394,7 +368,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
  
  export const signInWithPhoneNumber = async (req: Request, res: Response) => {
   
-  const { phoneNumber, fcmToken, platform } = req.body;
+  const { phoneNumber } = req.body;
 
   // Format phone number
   const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
@@ -445,18 +419,6 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     // if (!smsResponse) {
     //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to send OTP via SMS" });
     // }
-
-    if(fcmToken.trim() && platform.trim()) {
-      await prisma.pushNotificationToken.upsert({
-        where: { userId: user.id },
-        update: { token: fcmToken, platformType: platform as PlatformType },
-        create: {
-          userId: user.id,
-          token: fcmToken,
-          platformType: PlatformType[platform as keyof typeof PlatformType],
-        },
-      });
-    }
 
     return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
   } catch (error) {
