@@ -339,7 +339,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       if(fcmToken.trim() && platform.trim()) {
         await prisma.pushNotificationToken.upsert({
           where: { userId: updatedUser.id },
-          update: { token: fcmToken, platformType: platform as PlatformType },
+          update: { token: fcmToken, platformType:  PlatformType[platform as keyof typeof PlatformType] },
           create: {
             userId: updatedUser.id,
             token: fcmToken,
@@ -449,11 +449,11 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     if(fcmToken.trim() && platform.trim()) {
       await prisma.pushNotificationToken.upsert({
         where: { userId: user.id },
-        update: { token: fcmToken, platformType: platform as PlatformType },
+        update: { token: fcmToken,  platformType:  PlatformType[platform as keyof typeof PlatformType] },
         create: {
           userId: user.id,
           token: fcmToken,
-          platformType: PlatformType[platform as keyof typeof PlatformType],
+          platformType:  PlatformType[platform as keyof typeof PlatformType],
         },
       });
     }
