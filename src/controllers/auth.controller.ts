@@ -336,7 +336,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
         data: { refreshToken, accessToken, onlineStatus: "online" },
       });
 
-      if(fcmToken.trim() && platform.trim()) {
+      if(fcmToken?.trim() && platform?.trim()) {
         await prisma.pushNotificationToken.upsert({
           where: { userId: updatedUser.id },
           update: { token: fcmToken, platformType:  PlatformType[platform as keyof typeof PlatformType] },
@@ -387,6 +387,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     //  console.log(sendSMSWithKudiSMSResponse)
      return 
    } catch (error) {
+    console.log(error)
      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
    }
  };
@@ -446,7 +447,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to send OTP via SMS" });
     // }
 
-    if(fcmToken.trim() && platform.trim()) {
+    if(fcmToken?.trim() && platform?.trim()) {
       await prisma.pushNotificationToken.upsert({
         where: { userId: user.id },
         update: { token: fcmToken,  platformType:  PlatformType[platform as keyof typeof PlatformType] },
