@@ -9,7 +9,7 @@ import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { sendEmail } from "../utils/postMarkEmailService";
 import { PlatformType, Prisma } from "@prisma/client";
 import { expirationTime } from "../utils/timeExpiry";
-import { sendSMSWithInfoBip } from "../utils/sendSMSWithInfoBip";
+// import { sendSMSWithInfoBip } from "../utils/sendSMSWithInfoBip";
 import { sendPushNotification } from "../utils/push-notification/sendNotification";
 
 /**
@@ -299,7 +299,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
 
      const testOTP = generateOTP();
     // +12029106163
-     const sendSMSWithVonageResponse = await sendSMSWithInfoBip({ to: "+2347065066382", text: `Your OTP is ${testOTP}` });
+    //  const sendSMSWithVonageResponse = await sendSMSWithInfoBip({ to: "+2347065066382", text: `Your OTP is ${testOTP}` });
     //  console.log(sendSMSWithVonageResponse)
 
      if (!user || !user.password) {
