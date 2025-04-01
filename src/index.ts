@@ -5,6 +5,9 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import session from 'express-session';
 
+import http from "http";
+import socketIO from "socket.io";
+
 // routes
 import authRoutes from "./routes/auth.route";
 import driverRoutes from "./routes/driver.route";
@@ -21,6 +24,7 @@ import passport from "passport";
 import prisma from "./config/db";
 import { rejectBlockedUsers } from "./middlewares/blocked.user.middleware";
 import { startCronJob } from "./utils/cronJob";
+import socketIo from "./utils/socket";
 
 
 // Load the correct environment file based on NODE_ENV
@@ -31,6 +35,19 @@ dotenv.config({ path: envFile });
 const PORT = Number(process.env.PORT || "5150");
 
 const app: Application = express();
+const server = http.createServer(app);
+
+const ORIGINS = ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',];
+
+const io = new socketIO.Server(server, {
+    cors: { 
+        origin: ORIGINS,
+        methods: ["GET", "POST", "PUT", "DELETE"],
+    }
+});
+
+socketIo(io);
+
 
 app.disable('x-powered-by');
 app.use(express.json());
@@ -46,14 +63,11 @@ app.use(passport.session())
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',],
+    origin: ORIGINS,
     optionsSuccessStatus: 200,
-    credentials: true,
+    // credentials: true,
   })
 );
-
-
-
 app.use(cookieParser());
 swaggerDocs(app, PORT);
 
@@ -88,10 +102,10 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  startCronJob({});
-});
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    startCronJob({});
+  });
 
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received. Closing server...");
