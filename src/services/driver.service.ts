@@ -112,44 +112,38 @@ const haversineDistance = (
   return R * c;
 };
 export const registerDriver = async (data: DriverRegistrationInput) => {
-  // Ensure dateOfBirth is in full ISO format.
-  const dateOfBirthISO = data.dateOfBirth.includes("T")
-    ? data.dateOfBirth
-    : data.dateOfBirth + "T00:00:00Z";
+  // Simplify date conversion
+  const dateOfBirth = new Date(data.dateOfBirth.includes("T") ? 
+    data.dateOfBirth : `${data.dateOfBirth}T00:00:00Z`);
 
-  // Ensure the user exists.
-  const userExists = await prisma.user.findUnique({
-    where: { id: data.userId },
-  });
+  // Check user existence and existing driver in parallel
+  const [userExists, existingDriver] = await Promise.all([
+    prisma.user.findUnique({ where: { id: data.userId }, select: { id: true } }),
+    prisma.driver.findUnique({ 
+      where: { userId: data.userId },
+      include: { 
+       identifications: true,
+       vehicles: true
+      }
+    })
+  ]);
+
   if (!userExists) {
     throw new Error("User does not exist");
   }
 
-  // Check if a driver already exists for this user.
-  const existingDriver = await prisma.driver.findUnique({
-    where: { userId: data.userId },
-  });
-  
-  if (existingDriver) {
-
-    await prisma.driverIdentification.delete({
-      where: { driverId: existingDriver.id },
-    })
-
-    await prisma.driverVehicle.delete({
-      where: { driverId: existingDriver.id },
-    })
-    await prisma.driver.delete({
-      where: { id:  existingDriver.id },
-    })
-
-   
-    //throw new Error("Driver already exists");
-  }
-
-
+  // Use transaction for all database operations
   const driver = await prisma.$transaction(async (tx) => {
+    //Delete existing driver data if present
+    if (existingDriver) {
+      await Promise.all([
+        tx.driverIdentification.deleteMany({ where: { driverId: existingDriver.id } }),
+        tx.driverVehicle.deleteMany({ where: { driverId: existingDriver.id } }),
+        tx.driver.delete({ where: { id: existingDriver.id } })
+      ]);
+    }
 
+    // Create new driver record
     const createdDriver = await tx.driver.create({
       data: {
         userId: data.userId,
@@ -158,7 +152,7 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
         middleName: data.middleName,
         lastName: data.lastName,
         nationality: data.nationality,
-        dateOfBirth: new Date(dateOfBirthISO),
+        dateOfBirth,
         fullAddress: data.address,
         city: data.city,
         postalCode: data.postalCode,
@@ -169,94 +163,56 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
       },
     });
 
-
-    await tx.driverIdentification.create({
-      data: {
-        driverId: createdDriver.id,
-        issuingCountry: data.issuingCountry,
-        documentType: data.verificationType,
-        nin: data.nin,
-        passportPhotoUrl: "",
-        idCardFrontUrl: "",
-        idCardBackUrl: "",
-        licenseNumber: data.licenseNumber,
-        licenseExpiryDate: data.licenseExpiryDate,
-        licensePhotoUrl: "",
-        selfieWithLicenseUrl: "",
-      },
-    });
-
-
-    await tx.driverVehicle.create({
-      data: {
-        driverId: createdDriver.id,
-        carBrand: data.carBrand,
-        carModel: data.carModel,
-        licensePlateNumber: data.licensePlateNumber,
-        carColor: data.carColour,
-        carPictureUrl: "",
-        vehicleRegistration: "",
-        roadWorthiness: "",
-      },
-    });
+    // Create identification and vehicle in parallel
+    await Promise.all([
+      tx.driverIdentification.create({
+        data: {
+          driverId: createdDriver.id,
+          issuingCountry: data.issuingCountry,
+          documentType: data.verificationType,
+          nin: data.nin,
+          passportPhotoUrl: "",
+          idCardFrontUrl: "",
+          idCardBackUrl: "",
+          licenseNumber: data.licenseNumber,
+          licenseExpiryDate: data.licenseExpiryDate,
+          licensePhotoUrl: "",
+          selfieWithLicenseUrl: "",
+        },
+      }),
+      tx.driverVehicle.create({
+        data: {
+          driverId: createdDriver.id,
+          carBrand: data.carBrand,
+          carModel: data.carModel,
+          licensePlateNumber: data.licensePlateNumber,
+          carColor: data.carColour,
+          carPictureUrl: "",
+          vehicleRegistration: "",
+          roadWorthiness: "",
+        },
+      }),
+    ]);
 
     return createdDriver;
   });
 
-
-  // const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
-  // const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
-  // const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
-  // const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
-  // const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
-  // const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
-  // const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
-  // const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
-
-  // const [
-  //   passPortPhotoUrl,
-  //   idCardFrontUrl,
-  //   idCardBackUrl,
-  //   licensePhotoUrl,
-  //   selfieWithLicenseUrl,
-  //   carPictureUrl,
-  //   vehicleRegistrationUrl,
-  //   roadWorthinessUrl,
-  // ] = await Promise.all([
-  //   generatePresignedUrl(passportPhotoKey),
-  //   generatePresignedUrl(idCardFrontKey),
-  //   generatePresignedUrl(idCardBackKey),
-  //   generatePresignedUrl(licensePhotoKey),
-  //   generatePresignedUrl(selfieWithLicenseKey),
-  //   generatePresignedUrl(carPictureKey),
-  //   generatePresignedUrl(vehicleRegistrationKey),
-  //   generatePresignedUrl(roadWorthinessKey),
-  // ]);
-
-  // const preSignedUrls = {
-  //   passPortPhotoUrl,
-  //   idCardFrontUrl,
-  //   idCardBackUrl,
-  //   licensePhotoUrl,
-  //   selfieWithLicenseUrl,
-  //   carPictureUrl,
-  //   vehicleRegistrationUrl,
-  //   roadWorthinessUrl,
-  // };
-
   return { driver };
 };
-
 export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
   const { driverId, documents } = payload;
-  const driver = await prisma.driver.findUnique({ where: { id: driverId } });
-  if (!driver) {
+
+  const driverExists = await prisma.driver.count({ where: { id: driverId } });
+  if (!driverExists) {
     throw new Error("Driver not found");
   }
 
-
-  await prisma.$transaction(async (tx) => {
-    await tx.driverIdentification.update({
+  await prisma.$transaction([
+    prisma.driver.update({
+      where: { id: driverId },
+      data: { profileImage: documents.profileImage },
+    }),
+    prisma.driverIdentification.update({
       where: { driverId },
       data: {
         passportPhotoUrl: documents.passportPhotoUrl || undefined,
@@ -265,16 +221,15 @@ export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
         licensePhotoUrl: documents.licensePhotoUrl,
         selfieWithLicenseUrl: documents.selfieWithLicenseUrl,
       },
-    });
-
-    await tx.driverVehicle.update({
+    }),
+    prisma.driverVehicle.update({
       where: { driverId },
       data: {
         carPictureUrl: documents.carPictureUrl,
         roadWorthiness: documents.roadWorthiness,
       },
-    });
-  });
+    }),
+  ]);
 
   return { message: "Documents updated successfully" };
 };

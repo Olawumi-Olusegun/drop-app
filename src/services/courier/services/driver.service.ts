@@ -97,6 +97,11 @@ export const updateCourierDriverDocuments = async (payload: DocumentUploadPayloa
 
 
   await prisma.$transaction(async (tx) => {
+
+    await tx.driver.update({
+      where: {id: driverId},
+      data: {profileImage: documents.profileImage}
+    })
     await tx.driverIdentification.update({
       where: { driverId },
       data: {

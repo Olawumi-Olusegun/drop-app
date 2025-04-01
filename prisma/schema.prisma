@@ -116,6 +116,7 @@ model Driver {
   firstName           String
   middleName          String?
   lastName            String
+  profileImage        String?
   nationality         String
   dateOfBirth         DateTime
   fullAddress         String

@@ -316,7 +316,11 @@ export const getAllPendingDrivers = async (req: Request, res: Response) => {
             createdAt:  true,
             updatedAt:  true,
           }
-        }
+        },
+        identifications: true,
+        vehicles: true
+       
+        
       },
     });
 

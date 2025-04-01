@@ -82,6 +82,7 @@ export interface DocumentUploadPayload {
     carPictureUrl: string;
     vehicleRegistration: string;
     roadWorthiness?: string;
+    profileImage: string
 
   }
 }
