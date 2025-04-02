@@ -17,6 +17,8 @@ export const findDriver = async ({ driverIdToString, longitudeToFloat, latitudeT
                 select: { userId: true, user: true }
             });
 
+            driver?.user.latitude
+
             // If no driver found, return null
             if (!driver || !driver.userId) {
                 return { user: null, driver: null }

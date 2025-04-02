@@ -52,6 +52,9 @@ model User {
   couriers              CourierService[]       @relation("UserRides")
   pushNotificationToken PushNotificationToken?
   notifications         Notification[]
+
+  messagesSent     Message[] @relation("MessageSender")
+  messagesReceived Message[] @relation("MessageReceiver")
 }
 
 model Ride {
@@ -76,6 +79,7 @@ model Ride {
   user             User          @relation("UserRides", fields: [userId], references: [id], onDelete: Cascade)
   bids             RideBid[]
   cancellations    RideCancel[]
+  messages         Message[]
 }
 
 model RideBid {
@@ -340,6 +344,23 @@ model PushNotificationToken {
   token        String
   platformType PlatformType @default(android)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  rideId     String
+  content    String
+  timestamp  DateTime @default(now())
+  isOpen     Boolean  @default(false)
+
+  sender   User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
+  ride     Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum PlatformType {
