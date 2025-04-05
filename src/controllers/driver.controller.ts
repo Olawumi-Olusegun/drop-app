@@ -7,7 +7,6 @@ import {
   getAvailableRides,
   getDriverDashboard,
   getDriverProfile,
-  getDriverWallet,
   getRideDetails,
   getUserDetails,
   notifyArrival,
@@ -381,18 +380,6 @@ export const rateUserController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-export const getDriverWalletController = async (req: Request, res: Response) => {
-  try {
-    const driverId = req.query.driverId as string;
-    const wallet = await getDriverWallet(driverId)
-    res.status(200).json(wallet)
-
-
-  }
-  catch (error: any) {
-    res.status(500).json({ error: "Internal Server Error" })
-  }
-}
 
 export const getDriverRideHistoryController = async (req: Request, res: Response) => {
 
@@ -414,6 +401,47 @@ export const getDriverRideHistoryController = async (req: Request, res: Response
     }
     res.status(500).json({ error: "Internal Server Error" })
   }
+}
+
+export const FetchDriverWallet = async(req: Request,res: Response)=>{
+
+  try{
+    const driverId = req.query.driverId as string
+
+    const driver = (req as AuthRequest).user?.driverId
+    if (driverId !== driver) {
+      throw new Error("Invalid Access")
+
+    }
+    const user = await prisma.driver.findUnique({
+      where:{id: driverId}
+    })
+
+    if(!user){
+      throw new Error("Driver not Found")
+
+    }
+
+    const wallet = await prisma.wallet.findUnique({
+      where: {userId: user.userId}
+    })
+
+    res.status(Statuscode.SUCCESS).json(wallet)
+
+  }
+  catch(error:any){
+  console.error(error)
+  if(error.message === "Driver not Found"){
+    return res.status(Statuscode.NOT_FOUND).json({message: "Driver not Found"})
+  }
+  if (error.message === "Invalid Access"){
+    return res.status(Statuscode.UNAUTHORIZED).json({message: "Invalid Access"})
+  }
+
+  res.status(Statuscode.INTERNAL_SERVER_ERROR).json({error: "Internal Server Error"})
+
+  }
+
 }
 
 export const requestWithdrawalController = async(req: Request, res: Response)=>{

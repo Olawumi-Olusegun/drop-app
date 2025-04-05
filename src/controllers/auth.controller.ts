@@ -324,7 +324,6 @@ export const signInWithEmail = async (req: Request, res: Response) => {
      if (!isValidPassword) {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
      }
-
      const driver = await prisma.driver.findUnique({
       where: { userId: user?.id }
     })

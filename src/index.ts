@@ -37,7 +37,12 @@ const PORT = Number(process.env.PORT || "5150");
 const app: Application = express();
 const server = http.createServer(app);
 
-const ORIGINS = ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',];
+const ORIGINS = [
+  'http://localhost:3000', 
+  'http://localhost:5173',
+  'https://drop-app-ytc9.onrender.com',
+  'https://dropadmin.netlify.app',
+];
 
 const io = new socketIO.Server(server, {
     cors: { 
@@ -47,7 +52,6 @@ const io = new socketIO.Server(server, {
 });
 
 socketIo(io);
-
 
 app.disable('x-powered-by');
 app.use(express.json());
@@ -93,7 +97,6 @@ app.use(notFoundHandler);
 
 // Global Error Handler (For other errors)
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.log(err)
   const statusCode = err.status || Statuscode.INTERNAL_SERVER_ERROR;
   res.status(statusCode).json({
     message: err.message || "Server Error",

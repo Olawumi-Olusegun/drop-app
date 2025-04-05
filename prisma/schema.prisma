@@ -118,9 +118,12 @@ model OTP {
 model Driver {
   id                  String                @id @default(uuid())
   userId              String                @unique
+  driverType          DriverType            @default(instantRide)
+  transportType       TransportType?
   firstName           String
   middleName          String?
   lastName            String
+  profileImage        String?
   nationality         String
   dateOfBirth         DateTime
   fullAddress         String
@@ -307,7 +310,7 @@ model CourierService {
   finalFare           Float?        @default(0.0)
   userTimezone        String?
   expiresAt           DateTime?
-  transportType       TransportType
+  transportType       TransportType @default(car)
   paymentMethod       PaymentMethod
   senderName          String
   senderPhoneNumber   String
@@ -367,6 +370,13 @@ enum PlatformType {
   android
   ios
   web
+}
+
+enum DriverType {
+  instantRide
+  courier
+  freight
+  professionalDriver
 }
 
 enum PackageType {

@@ -55,7 +55,8 @@ export const validateUpdateDriverDocuments = [
   body('documents.vehicleRegistration')
     .isURL()
     .withMessage('vehicleRegistration must be a valid URL'),
-
+  body('documents.profileImage').isURL()
+  .withMessage('profileImage must be a valid URL'),
   body('documents.passportPhotoUrl').optional().isURL().withMessage('passportPhotoUrl must be a valid URL'),
   body('documents.idCardFrontUrl').optional().isURL().withMessage('idCardFrontUrl must be a valid URL'),
   body('documents.idCardBackUrl').optional().isURL().withMessage('idCardBackUrl must be a valid URL'),
