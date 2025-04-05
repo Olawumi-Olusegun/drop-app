@@ -3,12 +3,8 @@ build/
 firebase-config/
 .env
 .env.development
-
+drop-ride.json
 
 seed.ts
 .vscode
-<<<<<<< HEAD
 .DS_Store
-=======
-.DS_Store
->>>>>>> 0439b6587571ea76deeb940bb3f15b2afa2be8cf
