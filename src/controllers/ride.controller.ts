@@ -491,3 +491,40 @@ export const completeRide = async (req: Request, res: Response) => {
     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, error: "Internal server error" });
   }
 };
+
+export const getRiderRideHistory = async (req: Request, res: Response) => {
+
+  const page = req.query.page ? parseInt(req.query.page as string, 10) : 1
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10
+  const skip = (page - 1) * limit;
+
+  try {
+
+    const riderId = (req as AuthRequest).user?.userId as string;
+    const userRole = (req as AuthRequest).user.role as string;
+  
+    if (!riderId || !userRole || userRole !== "rider") {
+       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login as a rider" });
+       return
+    }
+
+    const totalCount = await prisma.ride.count({
+      where: { userId: riderId },
+    });
+
+    const rideHistory = await prisma.ride.findMany({
+      where: { userId: riderId },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    });
+  
+    res.status(Statuscode.SUCCESS).json({  rideHistory, totalCount, page, limit });
+    return;
+
+  }
+  catch (error) {
+     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, error: "Internal server error" });
+     return
+  }
+}

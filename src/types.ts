@@ -1,6 +1,5 @@
 //import { verificationType, TransportType } from '@prisma/client';
 import { Request } from "express";
-import passport from 'passport';
 
 export interface AuthRequest extends Request {
   user: {

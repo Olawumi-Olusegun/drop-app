@@ -10,7 +10,11 @@ jobs:
   build:
 =======
   build-main:
+<<<<<<< HEAD
 >>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
+=======
+>>>>>>> 0439b6587571ea76deeb940bb3f15b2afa2be8cf
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
     name: Build, Push to ECR & Deploy to ECS
     runs-on: ubuntu-latest
 
@@ -24,10 +28,14 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 <<<<<<< HEAD
+<<<<<<< HEAD
           aws-region: ${{ secrets.AWS_REGION }}
 =======
           aws-region:  eu-north-1 #${{ secrets.AWS_REGION }}
 >>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
+=======
+          aws-region:  eu-north-1 #${{ secrets.AWS_REGION }}
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -37,10 +45,14 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
 <<<<<<< HEAD
+<<<<<<< HEAD
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
 =======
           ECR_REPOSITORY: drop-ride #${{ secrets.ECR_REPOSITORY_NAME }}
 >>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
+=======
+          ECR_REPOSITORY: drop-ride #${{ secrets.ECR_REPOSITORY_NAME }}
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
           IMAGE_TAG: latest
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -51,6 +63,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
 <<<<<<< HEAD
+<<<<<<< HEAD
           task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
           container-name: "your-container-name"
           image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
@@ -59,14 +72,27 @@ jobs:
           container-name: "drop-ride"
           image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
 >>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
+=======
+          task-definition: ./ecs-task-definition.json #${{ secrets.ECS_TASK_DEFINITION }}
+=======
+          task-definition: ./drop-ride.json #${{ secrets.ECS_TASK_DEFINITION }}
+>>>>>>> 0439b6587571ea76deeb940bb3f15b2afa2be8cf
+          container-name: "drop-ride"
+          image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
 <<<<<<< HEAD
+<<<<<<< HEAD
           service: ${{ secrets.ECS_SERVICE_NAME }}
           cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+=======
+          service: #${{ secrets.ECS_SERVICE_NAME }}
+          cluster: #${{ secrets.ECS_CLUSTER_NAME }}
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
 =======
           service: drop-ride-service #${{ secrets.ECS_SERVICE_NAME }}
           cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
@@ -161,5 +187,9 @@ jobs:
           task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
           service: cardchargeWorker #${{ secrets.ECS_SERVICE_NAME_WITHDRAWALWORKER }}
           cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
+<<<<<<< HEAD
 >>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
+=======
+>>>>>>> 0439b6587571ea76deeb940bb3f15b2afa2be8cf
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
           wait-for-service-stability: true

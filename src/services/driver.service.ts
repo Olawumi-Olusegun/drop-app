@@ -193,6 +193,37 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
         },
       }),
     ]);
+    // Create identification and vehicle in parallel
+    await Promise.all([
+      tx.driverIdentification.create({
+        data: {
+          driverId: createdDriver.id,
+          issuingCountry: data.issuingCountry,
+          documentType: data.verificationType,
+          nin: data.nin,
+          passportPhotoUrl: "",
+          idCardFrontUrl: "",
+          idCardBackUrl: "",
+          licenseNumber: data.licenseNumber,
+          licenseExpiryDate: data.licenseExpiryDate,
+          licensePhotoUrl: "",
+          selfieWithLicenseUrl: "",
+          
+        },
+      }),
+      tx.driverVehicle.create({
+        data: {
+          driverId: createdDriver.id,
+          carBrand: data.carBrand,
+          carModel: data.carModel,
+          licensePlateNumber: data.licensePlateNumber,
+          carColor: data.carColour,
+          carPictureUrl: "",
+          vehicleRegistration: "",
+          roadWorthiness: "",
+        },
+      }),
+    ]);
 
     return createdDriver;
   });

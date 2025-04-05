@@ -7,9 +7,10 @@ import { Statuscode } from "../utils/Statuscode";
 import { hashPassword, isPasswordValid } from "../utils/hashPassword";
 import { formatPhoneNumber } from "../utils/formatPhoneNumber";
 import { sendEmail } from "../utils/postMarkEmailService";
-import { sendSMSWithKudiSMS } from "../utils/KudiSMS";
-import { Prisma } from "@prisma/client";
+import { PlatformType, Prisma } from "@prisma/client";
 import { expirationTime } from "../utils/timeExpiry";
+// import { sendSMSWithInfoBip } from "../utils/sendSMSWithInfoBip";
+import { sendPushNotification } from "../utils/push-notification/sendNotification";
 
 /**
  * @desc signupWithPhoneNumber
@@ -101,12 +102,15 @@ export const signupWithPhoneNumber = async (req: Request, res: Response) => {
     }
 
     // Send OTP to phoneNumber via sms
-    const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
+    // const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minute. Do not share it with anyone.`;
 
     // const kudiSmsResponse = await sendSMSWithKudiSMS(formattedPhoneNumber, message);
 
-    // if(!kudiSmsResponse) {
-    //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
+    // const sendSMSWithKudiSMSResponse = await sendSMSWithTwilio('+2348012345678', `Your OTP is ${phoneNumberOTP}`);
+
+    // if(!sendSMSWithKudiSMSResponse) {
+    //   res.status(Statuscode.BAD_REQUEST).json({ message: "Unable to send message to phone number" });
+    //   return;
     // }
 
     return res.status(Statuscode.CREATED).json({ message: "Signed up successfully. OTP sent to your phone." });
@@ -283,8 +287,8 @@ export const createPassword = async (req: Request, res: Response) => {
 
 export const signInWithEmail = async (req: Request, res: Response) => {
   // `identifier` can be either email or phoneNumber
-   const { identifier, password } = req.body;
- 
+   const { identifier, password, fcmToken, platform } = req.body;
+
    try {
      // Find user by email or phoneNumber
      const user = await prisma.user.findFirst({
@@ -292,7 +296,12 @@ export const signInWithEmail = async (req: Request, res: Response) => {
          OR: [{ email: identifier }, { phoneNumber: identifier }],
        },
      });
- 
+
+     const testOTP = generateOTP();
+    // +12029106163
+    //  const sendSMSWithVonageResponse = await sendSMSWithInfoBip({ to: "+2347065066382", text: `Your OTP is ${testOTP}` });
+    //  console.log(sendSMSWithVonageResponse)
+
      if (!user || !user.password) {
        return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
      }
@@ -327,6 +336,20 @@ export const signInWithEmail = async (req: Request, res: Response) => {
         data: { refreshToken, accessToken, onlineStatus: "online" },
       });
 
+      if(fcmToken?.trim() && platform?.trim()) {
+        await prisma.pushNotificationToken.upsert({
+          where: { userId: updatedUser.id },
+          update: { token: fcmToken, platformType:  PlatformType[platform as keyof typeof PlatformType] },
+          create: {
+            userId: updatedUser.id,
+            token: fcmToken,
+            platformType: PlatformType[platform as keyof typeof PlatformType],
+          },
+        });
+
+        await sendPushNotification({ fcmToken, title: "Drop Ride", body: "Test Notification! You are logged in" })
+      }
+
       const {
         id,
         fullName, 
@@ -341,7 +364,7 @@ export const signInWithEmail = async (req: Request, res: Response) => {
         profileImage,
       } = updatedUser;
 
-     return res.status(Statuscode.SUCCESS).json({ 
+     res.status(Statuscode.SUCCESS).json({ 
       message: "Signed in successfully",
       data: { 
         user: {
@@ -359,22 +382,29 @@ export const signInWithEmail = async (req: Request, res: Response) => {
             accessToken 
       }
      }});
-  
+
+    //  const sendSMSWithKudiSMSResponse = await sendSMSWithTwilio('+2347065066383', `Your OTP is 1234`);
+    //  console.log(sendSMSWithKudiSMSResponse)
+     return 
    } catch (error) {
-     return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+    console.log(error)
+      res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+      return
    }
  };
 
  
  export const signInWithPhoneNumber = async (req: Request, res: Response) => {
   
-  const { phoneNumber } = req.body;
+  const { phoneNumber, fcmToken, platform } = req.body;
 
   // Format phone number
   const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
   if (!formattedPhoneNumber) {
-    return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
-  }
+     res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid phone number format" });
+     return;
+    }
 
   try {
     // Find user by phoneNumber
@@ -383,19 +413,23 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+       res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+       return
     }
 
     if (user && user.isBlocked) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Your account has been blocked" });
+       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Your account has been blocked" });
+       return
     }
 
     if (user && !user.isUserVerified) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified yet" });
+       res.status(Statuscode.BAD_REQUEST).json({ message: "Your account is not verified yet" });
+       return
     }
 
     if (user && !user.phoneNumber) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Phonenumber not found" });
+       res.status(Statuscode.BAD_REQUEST).json({ message: "Phonenumber not found" });
+       return
     }
 
     // Generate OTP
@@ -407,9 +441,9 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       create: { otp: phoneNumberOTP, expiresAt: expirationTime(), user: { connect: { id: user.id } } },
     });
 
-    
     if (!createdOTP) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to generate OTP. Please try again." });
+       res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to generate OTP. Please try again." });
+       return
     }
 
     const message = `Your OTP is ${phoneNumberOTP}. It will expire in 10 minutes. Do not share it with anyone.`;
@@ -420,10 +454,24 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     //   return res.status(Statuscode.BAD_REQUEST).json({ message: "Failed to send OTP via SMS" });
     // }
 
-    return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
-  } catch (error) {
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "An error occurred. Please try again later." });
-  }
+    if(fcmToken?.trim() && platform?.trim()) {
+      await prisma.pushNotificationToken.upsert({
+        where: { userId: user.id },
+        update: { token: fcmToken,  platformType:  PlatformType[platform as keyof typeof PlatformType] },
+        create: {
+          userId: user.id,
+          token: fcmToken,
+          platformType:  PlatformType[platform as keyof typeof PlatformType],
+        },
+      });
+    }
+
+     res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
+     return
+    } catch (error) {
+     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "An error occurred. Please try again later." });
+     return
+    }
 };
 
  export const refreshToken = async (req: Request, res: Response) => {
@@ -433,21 +481,24 @@ export const signInWithEmail = async (req: Request, res: Response) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
-  }
+     res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Token is required" });
+     return
+    }
 
   const accessToken = authHeader.split(" ")[1];
 
   if(!accessToken) {
-    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid access token" }); 
-  }
+     res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid access token" }); 
+     return
+    }
 
   // Verify accesstoken
   const verifyToken = verifyJwtToken({ token: accessToken, secret: process.env.JWT_ACCESS_TOKEN_SECRET })
 
   if(!verifyToken) {
-    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid access token" }); 
-  }
+     res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid access token" }); 
+     return
+    }
 
   if (verifyToken.valid && verifyToken.payload?.userId) {
     user = await prisma.user.findUnique({ where: { id: verifyToken.payload.userId } });
@@ -456,8 +507,9 @@ export const signInWithEmail = async (req: Request, res: Response) => {
   try {
 
     if (!user) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
-    }
+       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+       return
+      }
 
     if(accessToken !== user?.accessToken) {
       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Invalid token" });
@@ -465,13 +517,15 @@ export const signInWithEmail = async (req: Request, res: Response) => {
     }
 
     if(!user.refreshToken) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
-    }
+       res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+       return
+      }
 
     const verifyToken = verifyJwtToken({ token: user.refreshToken, secret: process.env.JWT_REFRESH_TOKEN_SECRET })
 
     if(!verifyToken.valid) {
-      return res.status(Statuscode.UNAUTHORIZED).json({ message: verifyToken.error })
+       res.status(Statuscode.UNAUTHORIZED).json({ message: verifyToken.error });
+       return
     }
     const driver = await prisma.driver.findUnique({
       where: { userId: user?.id }
@@ -485,15 +539,16 @@ export const signInWithEmail = async (req: Request, res: Response) => {
       data: { refreshToken: newRefreshToken, accessToken: newAccessToken },
     });
 
-   return res.status(Statuscode.SUCCESS).json({
+    res.status(Statuscode.SUCCESS).json({
     message: "Token refreshed successfully",
     data: {
       accessToken: newAccessToken
    }});
-
+   return
   } catch (error) {
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
-  }
+     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error", error });
+     return
+    }
 };
 
 
@@ -511,7 +566,8 @@ export const createUsername = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+       res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+       return
     }
 
      await prisma.user.update({
@@ -519,10 +575,11 @@ export const createUsername = async (req: Request, res: Response) => {
        data: { fullName,  },
      });
 
-    return res.status(Statuscode.SUCCESS).json({ message: "Username created successful"});
- 
+     res.status(Statuscode.SUCCESS).json({ message: "Username created successful"});
+     return
   } catch (error) {
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+     return
   }
 }
 
@@ -557,12 +614,14 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
 
 
     if (!user) {
-      return res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+       res.status(Statuscode.NOT_FOUND).json({ message: "User not found" });
+       return
     }
 
     if (user && user.phoneNumber === formattedPhoneNumber) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "A user with this phone number already exists" });
-    }
+       res.status(Statuscode.BAD_REQUEST).json({ message: "A user with this phone number already exists" });
+       return
+      }
 
     // Generate OTP
     const phoneNumberOTP = generateOTP();
@@ -582,11 +641,12 @@ export const AddUserPhoneNumber = async (req: Request, res: Response) => {
     });
 
     // ADD EMAIL SENDING OTP
-    return res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
-
+     res.status(Statuscode.SUCCESS).json({ message: "A 4-digit OTP has been sent to your phone" });
+     return
   } catch (error) {
     console.log(error)
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+     return
   }
 };
 
@@ -598,7 +658,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
   const userId = (req as AuthRequest)?.user?.userId;
 
   if(!userId) {
-    return res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+     res.status(Statuscode.UNAUTHORIZED).json({ message: "Unauthorized: Please login" });
+     return
   }
  
   try {
@@ -609,7 +670,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+       res.status(Statuscode.BAD_REQUEST).json({ message: "Invalid credentials" });
+       return
     }
 
     const formData = {
@@ -621,9 +683,10 @@ export const updateUserProfile = async (req: Request, res: Response) => {
        data: { ...formData },
      });
 
-    return res.status(Statuscode.SUCCESS).json({ message: "Profile updated successfully"});
- 
+     res.status(Statuscode.SUCCESS).json({ message: "Profile updated successfully"});
+     return
   } catch (error) {
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+     res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+     return
   }
 }

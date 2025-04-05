@@ -27,4 +27,8 @@ RUN npx tsc
 EXPOSE 5150
 
 # Start application: Migrate prisma first before running the application
+<<<<<<< HEAD
 CMD ["npm", "run", "start"]
+=======
+CMD ["npm", "run", "start"]
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd

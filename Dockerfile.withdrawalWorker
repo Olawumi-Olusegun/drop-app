@@ -24,6 +24,10 @@ COPY . .
 RUN npx tsc
 
 # No ports to expose for background workers
+<<<<<<< HEAD
+=======
+  
+>>>>>>> e989ad524263bb4871adb4afa9d8f078e21d51bd
 
 # Set the default command to run the worker (adjust the path to your worker file as necessary)
 CMD ["npm", "run", "start:withdrawalworker"]

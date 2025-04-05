@@ -1,12 +1,14 @@
 node_modules/
 build/
+firebase-config/
 .env
 .env.development
 
 firebase-config/
-cardCharge.json
 drop-ride.json
 withdrawalWorker.json
+ecs-task-definition.json
+cardCharge.json
 seed.ts
 .vscode
 .DS_Store

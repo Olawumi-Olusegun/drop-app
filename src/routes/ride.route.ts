@@ -1,6 +1,6 @@
 import express from "express";
 import { getAllRidesWithinADriverLocation, getDriversController } from "../controllers/driver.controller";
-import { acceptBid, cancelRide, completeRide, getRideBids, getRideDetails, placeBid, rejectBid, requestRide, searchAvailableRides } from "../controllers/ride.controller";
+import { acceptBid, cancelRide, completeRide, getRideBids, getRideDetails, getRiderRideHistory, placeBid, rejectBid, requestRide, searchAvailableRides } from "../controllers/ride.controller";
 import { validateQueryParams, validateRequest } from "../validators";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
 import { UserRole } from "../types";
@@ -15,6 +15,7 @@ router.get("/available", validateQueryParams, validateRequest, getAllRidesWithin
 
 router.get("/available-drivers/:riderId", getDriversController);
 router.get("/available-rides", searchAvailableRides) //Riders;
+router.get("/ride-history", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.ADMIN]), getRiderRideHistory) //Riders;
 router.patch("/:rideId/complete", authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]), completeRide);
 router.get("/:rideId/details", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.DRIVER, UserRole.ADMIN]), getRideDetails);
 router.post("/:rideId/cancel", authenticateUser, authorizeRole([UserRole.RIDER, UserRole.ADMIN]), cancelRide);
