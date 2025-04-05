@@ -11,7 +11,6 @@ interface VerifyToken extends JwtPayload {
 }
 
 export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
-
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -69,7 +68,6 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     next();
 
   } catch (error) {
-
     console.log(error)
 
     if (error instanceof jwt.TokenExpiredError) {

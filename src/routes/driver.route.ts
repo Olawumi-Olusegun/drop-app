@@ -4,16 +4,19 @@ import {
     cancelRideBidController,
     completeRideController,
     DocumentUploadController,
+    FetchDriverWallet,
+    driverGetRiderDetails,
     getAvailableRidesController,
     getDriverDashboardController,
     getDriverProfileController,
     getDriverRideHistoryController,
     getDriversController,
-    getDriverWalletController,
     getRideDetailsController,
     getUserDetailsController,
+    goOnlineController,
     rateUserController,
     registerDriverController,
+    requestWithdrawalController,
     startRideController,
 } from "../controllers/driver.controller";
 import { updateDriverDocuments } from "../services/driver.service";
@@ -28,13 +31,18 @@ import {
     validateDriverRideHistory,
     validateDriverWallet,
     validateGetUserDetails,
+    validateGoOnline,
     validateRateUser,
     validateRideIdParam,
     validateStartRide,
     validateUpdateDriverDocuments,
+    validateWithdrawalRequest,
 } from "../validators/driverValidator";
 import { authenticateUser, authorizeRole } from "../middlewares/auth.middleware";
-import { UserRole } from "@prisma/client";
+import { rejectSuspendedDrivers } from "../middlewares/suspended.driver.middleware";
+import { validateBankDetails } from "../validators/userValidator";
+import { saveBankDetails } from "../controllers/user.controller";
+import { UserRole } from "../types";
 
 const router = express.Router();
 
@@ -47,20 +55,23 @@ router.post(
     validateUpdateDriverDocuments,
     DocumentUploadController
 );
+router.post("/online", authenticateUser,validateGoOnline, goOnlineController)
 router.get('/profile', authenticateUser, validateDriverProfile, getDriverProfileController)
 router.get("/dashboard", authenticateUser, validateDriverDashboard, getDriverDashboardController);
-
 router.get("/available", authenticateUser, validateAvailableRides, getAvailableRidesController);
-
 router.get("/ride/:rideId", authenticateUser, validateRideIdParam, getRideDetailsController);
 router.get("/user/:userId", authenticateUser, validateGetUserDetails, getUserDetailsController);
-
 router.post("/:rideId/accept", authenticateUser, validateAcceptRide, acceptRideController);
-
 router.post("/:rideId/cancel", authenticateUser, validateCancelBid, cancelRideBidController);
 router.post("/:rideId/start", authenticateUser, validateStartRide, startRideController);
 router.post("/:rideId/complete", authenticateUser, validateCompleteRide, completeRideController);
 router.post("/:userId/rate", authenticateUser, validateRateUser, rateUserController);
 router.get("/rides", authenticateUser, validateDriverRideHistory, getDriverRideHistoryController);
-router.get('/wallet', authenticateUser, validateDriverWallet, getDriverWalletController)
+router.get('/wallet', authenticateUser, validateDriverWallet, FetchDriverWallet)
+router.post('/addbank', authenticateUser,  validateBankDetails ,  saveBankDetails)
+router.post('/request-withdrawal', authenticateUser,  validateWithdrawalRequest,requestWithdrawalController)
+
+
+// Added by dev Olusegun
+router.post('/driver-get-user-details', authenticateUser, authorizeRole([UserRole.DRIVER, UserRole.ADMIN]),  driverGetRiderDetails)
 export default router;

@@ -3,7 +3,10 @@ build/
 .env
 .env.development
 
-
+firebase-config/
+cardCharge.json
+drop-ride.json
+withdrawalWorker.json
 seed.ts
 .vscode
 .DS_Store

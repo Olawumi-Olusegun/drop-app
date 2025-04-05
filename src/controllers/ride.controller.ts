@@ -4,15 +4,15 @@ import { Statuscode } from "../utils/Statuscode";
 import { expirationTime } from "../utils/timeExpiry";
 import { AuthRequest } from "../types";
 import haversineDistance from "haversine-distance";
-import { Prisma } from "@prisma/client";
+import { ActivityType, Prisma } from "@prisma/client";
 
 
 export const requestRide = async (req: Request, res: Response) => {
 
-  const userId = (req as AuthRequest).user?.userId as string;
+  const userRequest = (req as AuthRequest)?.user;
 
-    const {  
-      riderId, 
+    const {
+      riderId,
       pickupLocation, 
       pickupLongitude, 
       pickupLatitude, 
@@ -30,7 +30,7 @@ export const requestRide = async (req: Request, res: Response) => {
         where: { id: riderId }
       });
   
-      if (!user || !userId || userId !== user.id) {
+      if (!user || !userRequest?.userId || userRequest?.userId !== user.id) {
         res.status(404).json({ message: "User not found" });
         return 
       }
@@ -40,21 +40,37 @@ export const requestRide = async (req: Request, res: Response) => {
         return 
       }
 
+
   // Create a new ride request
     const ride = await prisma.ride.create({
-        data: {
-            userId: riderId,
-            status: "pending",
-            pickupLocation,
-            pickupLongitude,
-            pickupLatitude,
-            dropoffLocation,
-            dropoffLatitude,
-            dropoffLongitude,
-            userTimezone,
-            finalFare: parseFloat(price),
-            expiresAt: expirationTime(15) //The ride expires after 15 minutes
-        } });
+      data: {
+        userId: riderId,
+        status: "pending",
+        pickupLocation,
+        pickupLongitude,
+        pickupLatitude,
+        dropoffLocation,
+        dropoffLatitude,
+        dropoffLongitude,
+        userTimezone,
+        finalFare: parseFloat(price),
+        expiresAt: expirationTime(15), // The ride expires after 15 minutes
+        driverId: null,
+      },
+    });
+
+    const activityData = {
+      userId: user.id,
+      rideId: ride.id,
+      driverId: null,
+      activityType: ActivityType.ride_requested,
+      description: "",
+      subDescription: "",
+    }
+
+    const activities = await prisma.activityLog.create({
+      data: { ...activityData },
+  });
   
      res.status(Statuscode.CREATED).json({
        message: "Ride request created successfully",
@@ -104,9 +120,9 @@ export const cancelRide = async (req: Request, res: Response) => {
   export const getRideDetails = async (req: Request, res: Response) => {
 
     try {
-  
+
         const {  rideId } = req.params;
-    
+
         // Check if ride exists
         const ride = await prisma.ride.findUnique({ where: { id: rideId } });
   
@@ -119,6 +135,45 @@ export const cancelRide = async (req: Request, res: Response) => {
         console.error(error);
         return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
       }
+    };
+
+  export const getRecentActivities = async (req: Request, res: Response) => {
+
+    try {
+
+        const {  rideId } = req.params;
+
+        const { activityType = "ride" } = req.query;
+
+        const user = (req.user as AuthRequest)?.user;
+
+        if(!user || !user.userId) {
+          return;
+        }
+
+        // Check if ride exists
+        let userActivities = await prisma.ride.findMany({ where: { userId: user.userId} });
+  
+        if (!userActivities) {
+          return res.status(Statuscode.NOT_FOUND).json({ message: "No recent activity yet" });
+        }
+
+        if(activityType === "ride") {
+
+          await prisma.ride.findMany({ where: { userId: user.userId} });
+  
+          if (!userActivities) {
+            return res.status(Statuscode.NOT_FOUND).json({ message: "Ride not found" });
+          }
+
+        }
+
+        return res.status(Statuscode.CREATED).json({ success: true, data: { userActivities } });
+      } catch (error) {
+        console.error(error);
+        return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+      }
+
     };
   
 
@@ -151,7 +206,6 @@ export const getRideBids = async (req: Request, res: Response) => {
               id: true,
               user: {
                 select: {
-                  id: true,
                   fullName: true,
                   email: true,
                   phoneNumber: true,
@@ -170,8 +224,14 @@ export const getRideBids = async (req: Request, res: Response) => {
           },
         },
       });
-  
-      return res.status(Statuscode.SUCCESS).json({ data: { bids } });
+
+
+      // Restructure the data
+      const formattedRideBids = bids.map(({ id, driver, ...rest }) => ({
+        id, ...rest, driverId: driver?.id, ...(driver?.user ?? {}),
+      }));
+
+      return res.status(Statuscode.SUCCESS).json({ data: { bids: formattedRideBids } });
     } catch (error) {
       console.error(error);
       return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
@@ -179,33 +239,44 @@ export const getRideBids = async (req: Request, res: Response) => {
 };
 
   // Rider accepts a bid
-export const acceptBid = async (req: Request, res: Response) => {
-  try {
-
-    const { rideId, bidId } = req.body;
-
-    const bid = await prisma.rideBid.findUnique({ where: { id: bidId } });
-
-    if (!bid) {
-      return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Bid not found" });
-    }
-
-    await prisma.ride.update({
-      where: { id: rideId },
-      data: { driverId: bid.driverId, finalFare: bid.amount, status: "accepted" },
-    });
-
-    await prisma.rideBid.updateMany({
-      where: { rideId, id: { not: bidId } },
-      data: { status: "rejected" },
-    });
-
-    return res.status(Statuscode.SUCCESS).json({ success: true, message: "Bid accepted" });
-  } catch (error) {
-    return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, message: error });
-  }
-};
+  export const acceptBid = async (req: Request, res: Response) => {
+    try {
+      const { rideId, bidId } = req.body;
   
+      const bid = await prisma.rideBid.findUnique({ where: { id: bidId } });
+  
+      if (!bid) {
+        return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Bid not found" });
+      }
+  
+      // Check if the driver exists
+      const driver = await prisma.driver.findUnique({
+        where: { id: bid.driverId },
+      });
+  
+      if (!driver) {
+        return res.status(Statuscode.NOT_FOUND).json({ success: false, message: "Driver not found" });
+      }
+  
+      // Update the ride with the driver and fare
+      await prisma.ride.update({
+        where: { id: rideId },
+        data: { driverId: bid.driverId, finalFare: bid.amount, status: "accepted" },
+      });
+  
+      // Reject all other bids for this ride
+      await prisma.rideBid.updateMany({
+        where: { rideId, id: { not: bidId } },
+        data: { status: "rejected" },
+      });
+  
+      return res.status(Statuscode.SUCCESS).json({ success: true, message: "Bid accepted" });
+    } catch (error) {
+      console.error("Error accepting bid:", error);
+      return res.status(Statuscode.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error", error });
+    }
+  };
+
 
 export const rejectBid = async (req: Request, res: Response) => {
 
@@ -296,6 +367,8 @@ export const placeBid = async (req: Request, res: Response) => {
 
   const { rideId, driverId, amount } = req.body;
 
+  const user = (req.user as AuthRequest)?.user;
+
   try {
 
     // Check if the ride exists
@@ -325,6 +398,35 @@ export const placeBid = async (req: Request, res: Response) => {
     // Create bid
     const bid = await prisma.rideBid.create({
       data: { rideId, driverId, amount: parseFloat(amount) },
+    });
+
+    const activityExist = await prisma.activityLog.findFirst({
+      where: { rideId }
+    })
+
+    // Fetch activity logs based on user role
+      const whereClause = {
+        ...(user?.role === "rider" && { riderId: ride.userId }),
+        ...(user?.role === "driver" && { driverId })
+      }
+
+      await prisma.activityLog.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+    const activityData = {
+      driverId,
+      activityType: ActivityType.bid_placed,
+      description: "",
+      subDescription: "",
+    }
+
+    // rideId, driverId, amount
+    const updatedActivity = await prisma.activityLog.update({
+      where: { id: activityExist?.id },
+      data: {...activityData }
     });
 
     return res.status(Statuscode.CREATED).json({ success: true, data: { bid } });

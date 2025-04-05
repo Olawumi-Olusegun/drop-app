@@ -9,17 +9,23 @@ import session from 'express-session';
 import authRoutes from "./routes/auth.route";
 import driverRoutes from "./routes/driver.route";
 import rideRoutes from "./routes/ride.route";
+import adminRoutes from "./routes/admin.route";
+import courierRoutes from "./services/courier/routes/courier.route";
+import courierDrivers from "./services/courier/routes/driver.route"
 import passportRoutes from "./routes/passport.route";
+import scheduleRideRoutes from "./routes/schedule-ride.route";
+import userRoutes from "./routes/user.route"
 import swaggerDocs from "./utils/swagger";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { Statuscode } from "./utils/Statuscode";
 import passport from "passport";
 import prisma from "./config/db";
 import { rejectBlockedUsers } from "./middlewares/blocked.user.middleware";
+import { startCronJob } from "./utils/cronJob";
 
 
 // Load the correct environment file based on NODE_ENV
-const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
+const envFile = (process.env.NODE_ENV === "development") ? ".env.development" : ".env";
 
 dotenv.config({ path: envFile });
 
@@ -41,16 +47,17 @@ app.use(passport.session())
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://drop-app-ytc9.onrender.com',  'http://drop-ride-service-1945911928.eu-north-1.elb.amazonaws.com'],
     optionsSuccessStatus: 200,
     credentials: true,
   })
 );
 
 
-
 app.use(cookieParser());
 swaggerDocs(app, PORT);
+
+
 
 // API Routes
 app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'OK' }));
@@ -58,10 +65,14 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/", passportRoutes);
 
 
-app.use(rejectBlockedUsers)
+app.use(rejectBlockedUsers);
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
-
+app.use('/api/v1/admin', adminRoutes);
+app.use("/api/v1/scheduled-rides", scheduleRideRoutes);
+app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/couriers', courierRoutes)
+app.use('/api/v1/couriers/drivers', courierDrivers)
 
 
 // Catch-all middleware for 404 routes
@@ -80,6 +91,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startCronJob({});
 });
 
 process.on("SIGTERM", async () => {

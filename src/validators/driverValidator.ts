@@ -55,7 +55,8 @@ export const validateUpdateDriverDocuments = [
   body('documents.vehicleRegistration')
     .isURL()
     .withMessage('vehicleRegistration must be a valid URL'),
-
+  body('documents.profileImage').isURL()
+  .withMessage('profileImage must be a valid URL'),
   body('documents.passportPhotoUrl').optional().isURL().withMessage('passportPhotoUrl must be a valid URL'),
   body('documents.idCardFrontUrl').optional().isURL().withMessage('idCardFrontUrl must be a valid URL'),
   body('documents.idCardBackUrl').optional().isURL().withMessage('idCardBackUrl must be a valid URL'),
@@ -206,6 +207,9 @@ export const validateCompleteRide = [
     .isUUID().withMessage('driverId must be a valid UUID'),
   body('finalFare')
     .exists().withMessage('finalFare is required'),
+  body('paymentMethod')
+  .exists().withMessage('paymentMethod is required')
+  .isIn(['cash', 'card']).withMessage('paymentMethod must either be cash or card'),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -256,6 +260,34 @@ export const validateDriverWallet = [
   query('driverId')
     .exists().withMessage('driverId is required')
     .isUUID().withMessage('driverId must be a valid UUID'),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    next();
+  },
+];
+
+export const validateGoOnline = [
+  body('userId')
+    .exists().withMessage('userId is required')
+    .isUUID().withMessage('userId must be a valid UUID'),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
+
+
+export const validateWithdrawalRequest = [
+  body('userId')
+    .exists().withMessage('userId is required')
+    .isUUID().withMessage('userId must be a valid UUID'),
+  body('amount')
+    .exists().withMessage('amount is required')
+    .isFloat({ gt: 0 }).withMessage('amount must be a positive number'),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });

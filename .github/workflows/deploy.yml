@@ -6,7 +6,11 @@ on:
       - main
 
 jobs:
+<<<<<<< HEAD
   build:
+=======
+  build-main:
+>>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
     name: Build, Push to ECR & Deploy to ECS
     runs-on: ubuntu-latest
 
@@ -19,7 +23,11 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+<<<<<<< HEAD
           aws-region: ${{ secrets.AWS_REGION }}
+=======
+          aws-region:  eu-north-1 #${{ secrets.AWS_REGION }}
+>>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -28,7 +36,11 @@ jobs:
       - name: Build and Push Docker Image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+<<<<<<< HEAD
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+=======
+          ECR_REPOSITORY: drop-ride #${{ secrets.ECR_REPOSITORY_NAME }}
+>>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
           IMAGE_TAG: latest
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -38,14 +50,116 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
+<<<<<<< HEAD
           task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
           container-name: "your-container-name"
           image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+=======
+          task-definition: ./drop-ride.json #${{ secrets.ECS_TASK_DEFINITION }}
+          container-name: "drop-ride"
+          image: ${{ steps.login-ecr.outputs.registry }}/drop-ride:latest  # ${{ secrets.ECR_REPOSITORY_NAME }}drop-ride:latest
+>>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
+<<<<<<< HEAD
           service: ${{ secrets.ECS_SERVICE_NAME }}
           cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+=======
+          service: drop-ride-service #${{ secrets.ECS_SERVICE_NAME }}
+          cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+  build-Chargeworker:
+    name: Build, Push Card Charge Worker & Deploy to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:  eu-north-1 #${{ secrets.AWS_REGION }}
+        
+      - name: Login to Amazon ECR for Worker
+        id: login-ecr-worker
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Worker Docker Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-worker.outputs.registry }}
+          ECR_REPOSITORY: cardcharge
+          IMAGE_TAG: latest
+        run: |
+          docker build -f Dockerfile.cardChargeworker -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update ECS Task Definition for Worker
+        id: task-def-worker
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ./cardCharge.json #${{ secrets.ECS_TASK_DEFINITION_CARDCHARGEWORKER }}
+          container-name: "cardcharge"
+          image: ${{ steps.login-ecr-worker.outputs.registry }}/cardcharge:latest  # cardcharge
+
+      - name: Deploy to Amazon ECS for Worker
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
+          service: cardchargeWorker #${{ secrets.ECS_SERVICE_NAME_CARDCHARGEWORKER }}
+          cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+
+
+
+  build-Withdrawalworker:
+    name: Build, Push Withdrawal Charge Worker & Deploy to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:  eu-north-1 #${{ secrets.AWS_REGION }}
+        
+      - name: Login to Amazon ECR for Worker
+        id: login-ecr-worker
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Worker Docker Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-worker.outputs.registry }}
+          ECR_REPOSITORY: withdrawalworker
+          IMAGE_TAG: latest
+        run: |
+          docker build -f Dockerfile.withdrawalWorker -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update ECS Task Definition for Worker
+        id: task-def-worker
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ./withdrawalWorker.json #${{ secrets.ECS_TASK_DEFINITION_CARDCHARGEWORKER }}
+          container-name: "withdrawalworker"
+          image: ${{ steps.login-ecr-worker.outputs.registry }}/withdrawalworker:latest  # cardcharge
+
+      - name: Deploy to Amazon ECS for Worker
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-worker.outputs.task-definition }}
+          service: cardchargeWorker #${{ secrets.ECS_SERVICE_NAME_WITHDRAWALWORKER }}
+          cluster: drop-ride-cluster-ecs #${{ secrets.ECS_CLUSTER_NAME }}
+>>>>>>> 15f734ccd7871813a0e54d1b854838afc5bf66ac
           wait-for-service-stability: true

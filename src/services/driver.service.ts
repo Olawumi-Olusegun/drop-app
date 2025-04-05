@@ -1,5 +1,10 @@
 import {
   BidStatus,
+  DriverType,
+  OnlineStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
   PrismaClient,
   RegistrationStatus,
   Ride,
@@ -12,6 +17,12 @@ import { DocumentUploadPayload, DriverRegistrationInput } from "../types";
 import { generatePresignedUrl } from "../utils/s3";
 import { Response } from "express";
 import haversine from "haversine-distance";
+
+import { chargeSavedCard } from "../utils/paystackhelpers";
+import { publishToQueue } from "../jobs/rabbbitMqJob";
+import CONSTANTS from "../config/constants";
+
+
 const prisma = new PrismaClient();
 
 export const getAvailableDrivers = async (
@@ -101,38 +112,47 @@ const haversineDistance = (
   return R * c;
 };
 export const registerDriver = async (data: DriverRegistrationInput) => {
-  // Ensure dateOfBirth is in full ISO format.
-  const dateOfBirthISO = data.dateOfBirth.includes("T")
-    ? data.dateOfBirth
-    : data.dateOfBirth + "T00:00:00Z";
+  // Simplify date conversion
+  const dateOfBirth = new Date(data.dateOfBirth.includes("T") ? 
+    data.dateOfBirth : `${data.dateOfBirth}T00:00:00Z`);
 
-  // Ensure the user exists.
-  const userExists = await prisma.user.findUnique({
-    where: { id: data.userId },
-  });
+  // Check user existence and existing driver in parallel
+  const [userExists, existingDriver] = await Promise.all([
+    prisma.user.findUnique({ where: { id: data.userId }, select: { id: true } }),
+    prisma.driver.findUnique({ 
+      where: { userId: data.userId },
+      include: { 
+       identifications: true,
+       vehicles: true
+      }
+    })
+  ]);
+
   if (!userExists) {
     throw new Error("User does not exist");
   }
 
-  // Check if a driver already exists for this user.
-  const existingDriver = await prisma.driver.findUnique({
-    where: { userId: data.userId },
-  });
-  if (existingDriver) {
-    throw new Error("Driver already exists");
-  }
-
-
+  // Use transaction for all database operations
   const driver = await prisma.$transaction(async (tx) => {
+    //Delete existing driver data if present
+    if (existingDriver) {
+      await Promise.all([
+        tx.driverIdentification.deleteMany({ where: { driverId: existingDriver.id } }),
+        tx.driverVehicle.deleteMany({ where: { driverId: existingDriver.id } }),
+        tx.driver.delete({ where: { id: existingDriver.id } })
+      ]);
+    }
 
+    // Create new driver record
     const createdDriver = await tx.driver.create({
       data: {
         userId: data.userId,
+        driverType: DriverType.instantRide,
         firstName: data.firstName,
         middleName: data.middleName,
         lastName: data.lastName,
         nationality: data.nationality,
-        dateOfBirth: new Date(dateOfBirthISO),
+        dateOfBirth,
         fullAddress: data.address,
         city: data.city,
         postalCode: data.postalCode,
@@ -143,94 +163,56 @@ export const registerDriver = async (data: DriverRegistrationInput) => {
       },
     });
 
-
-    await tx.driverIdentification.create({
-      data: {
-        driverId: createdDriver.id,
-        issuingCountry: data.issuingCountry,
-        documentType: data.verificationType,
-        nin: data.nin,
-        passportPhotoUrl: "",
-        idCardFrontUrl: "",
-        idCardBackUrl: "",
-        licenseNumber: data.licenseNumber,
-        licenseExpiryDate: data.licenseExpiryDate,
-        licensePhotoUrl: "",
-        selfieWithLicenseUrl: "",
-      },
-    });
-
-
-    await tx.driverVehicle.create({
-      data: {
-        driverId: createdDriver.id,
-        carBrand: data.carBrand,
-        carModel: data.carModel,
-        licensePlateNumber: data.licensePlateNumber,
-        carColor: data.carColour,
-        carPictureUrl: "",
-        vehicleRegistration: "",
-        roadWorthiness: "",
-      },
-    });
+    // Create identification and vehicle in parallel
+    await Promise.all([
+      tx.driverIdentification.create({
+        data: {
+          driverId: createdDriver.id,
+          issuingCountry: data.issuingCountry,
+          documentType: data.verificationType,
+          nin: data.nin,
+          passportPhotoUrl: "",
+          idCardFrontUrl: "",
+          idCardBackUrl: "",
+          licenseNumber: data.licenseNumber,
+          licenseExpiryDate: data.licenseExpiryDate,
+          licensePhotoUrl: "",
+          selfieWithLicenseUrl: "",
+        },
+      }),
+      tx.driverVehicle.create({
+        data: {
+          driverId: createdDriver.id,
+          carBrand: data.carBrand,
+          carModel: data.carModel,
+          licensePlateNumber: data.licensePlateNumber,
+          carColor: data.carColour,
+          carPictureUrl: "",
+          vehicleRegistration: "",
+          roadWorthiness: "",
+        },
+      }),
+    ]);
 
     return createdDriver;
   });
 
-
-  const passportPhotoKey = `drivers/${driver.id}/passportPhoto.jpg`;
-  const idCardFrontKey = `drivers/${driver.id}/idCardFront.jpg`;
-  const idCardBackKey = `drivers/${driver.id}/idCardBack.jpg`;
-  const licensePhotoKey = `drivers/${driver.id}/licensePhoto.jpg`;
-  const selfieWithLicenseKey = `drivers/${driver.id}/selfieWithLicense.jpg`;
-  const carPictureKey = `drivers/${driver.id}/carPicture.jpg`;
-  const vehicleRegistrationKey = `drivers/${driver.id}/vehicleRegistration.jpg`;
-  const roadWorthinessKey = `drivers/${driver.id}/roadWorthiness.jpg`;
-
-  const [
-    passPortPhotoUrl,
-    idCardFrontUrl,
-    idCardBackUrl,
-    licensePhotoUrl,
-    selfieWithLicenseUrl,
-    carPictureUrl,
-    vehicleRegistrationUrl,
-    roadWorthinessUrl,
-  ] = await Promise.all([
-    generatePresignedUrl(passportPhotoKey),
-    generatePresignedUrl(idCardFrontKey),
-    generatePresignedUrl(idCardBackKey),
-    generatePresignedUrl(licensePhotoKey),
-    generatePresignedUrl(selfieWithLicenseKey),
-    generatePresignedUrl(carPictureKey),
-    generatePresignedUrl(vehicleRegistrationKey),
-    generatePresignedUrl(roadWorthinessKey),
-  ]);
-
-  const preSignedUrls = {
-    passPortPhotoUrl,
-    idCardFrontUrl,
-    idCardBackUrl,
-    licensePhotoUrl,
-    selfieWithLicenseUrl,
-    carPictureUrl,
-    vehicleRegistrationUrl,
-    roadWorthinessUrl,
-  };
-
-  return { driver, preSignedUrls };
+  return { driver };
 };
-
 export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
   const { driverId, documents } = payload;
-  const driver = await prisma.driver.findUnique({ where: { id: driverId } });
-  if (!driver) {
+
+  const driverExists = await prisma.driver.count({ where: { id: driverId } });
+  if (!driverExists) {
     throw new Error("Driver not found");
   }
 
-
-  await prisma.$transaction(async (tx) => {
-    await tx.driverIdentification.update({
+  await prisma.$transaction([
+    prisma.driver.update({
+      where: { id: driverId },
+      data: { profileImage: documents.profileImage },
+    }),
+    prisma.driverIdentification.update({
       where: { driverId },
       data: {
         passportPhotoUrl: documents.passportPhotoUrl || undefined,
@@ -239,24 +221,39 @@ export const updateDriverDocuments = async (payload: DocumentUploadPayload) => {
         licensePhotoUrl: documents.licensePhotoUrl,
         selfieWithLicenseUrl: documents.selfieWithLicenseUrl,
       },
-    });
-
-    await tx.driverVehicle.update({
+    }),
+    prisma.driverVehicle.update({
       where: { driverId },
       data: {
         carPictureUrl: documents.carPictureUrl,
         roadWorthiness: documents.roadWorthiness,
       },
-    });
-  });
+    }),
+  ]);
 
   return { message: "Documents updated successfully" };
 };
+export const goOnline = async(userId: string)=>{
+  const user = await prisma.user.findUnique({
+    where:{ id: userId},
+  })
+  if(!user){
+    throw new Error("User not found")
+  }
+  const updatedUser = await prisma.user.update({
+    where: {id: userId},
+    data:{
+      onlineStatus: OnlineStatus.online
+    }
+  })
 
+  return updatedUser
+
+}
 export const getDriverProfile = async (userId: string) => {
 
   const driver = await prisma.driver.findUnique({
-    where: { userId }
+    where: {  userId: userId }
   })
 
   if (!driver) {
@@ -336,7 +333,7 @@ export const getAvailableRides = async (
       },
     },
     orderBy: {
-      createdAt: "asc",
+      createdAt: "desc",
     },
   });
 
@@ -460,49 +457,111 @@ export const startRide = async (
   });
 
   return updatedRide;
+
+
 };
+
+
+
+
 
 export const completeRide = async (
   rideId: string,
   driverId: string,
-  finalFare: string
-): Promise<Ride> => {
-  const ride = await prisma.ride.findUnique({ where: { id: rideId } });
-  if (!ride) {
-    throw new Error("Ride not found");
-  }
-  if (ride.status !== RideStatus.ongoing) {
-    throw new Error("Ride is not in progress");
-  }
 
-  if (ride.driverId !== driverId) {
-    throw new Error("Driver is not authorized to complete this ride");
-  }
+  finalFare: string,
+  userId: string,
+  paymentMethod: PaymentMethod
+) => {
 
-  const updatedRide = await prisma.ride.update({
-    where: { id: rideId },
-    data: {
-      finalFare: parseFloat(finalFare),
-      status: RideStatus.completed,
-    },
+  
+  const finalFareAmount = parseFloat(finalFare);
+  const commission = finalFareAmount * CONSTANTS.COMMISION_RATE
+  const netAmount = finalFareAmount - commission;
+  const reference = `ride-${rideId}-${Date.now()}`;
+
+  
+  const { rideUpdate, riderEmail, riderId } = await prisma.$transaction(async (tx) => {
+    const ride = await tx.ride.findUnique({
+      where: { id: rideId },
+      include: { user: { select: { id: true, email: true, savedCardAuthCode: true } } },
+    });
+    if (!ride) throw new Error("Ride not found");
+    if (ride.status !== RideStatus.ongoing) throw new Error("Ride is not in progress");
+    if (ride.driverId !== driverId) throw new Error("Driver is not authorized to complete this ride");
+
+    // Update the ride to completed.
+    const rideUpdate = await tx.ride.update({
+      where: { id: rideId },
+      data: { finalFare: finalFareAmount, status: RideStatus.completed },
+    });
+
+    let paymentStatus: PaymentStatus;
+    if (paymentMethod === PaymentMethod.cash) {
+      paymentStatus = PaymentStatus.completed;
+    } else if (paymentMethod === PaymentMethod.card) {
+      paymentStatus = PaymentStatus.pending; 
+    } else {
+      throw new Error("Unsupported payment method");
+    }
+
+   
+    const payment = await tx.payment.create({
+      data: {
+        rideId,
+        userId: ride.user.id,
+        amount: finalFareAmount,
+        netAmount,
+        paymentMethod,
+        status: paymentStatus,
+        reference,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: ride.user.id },
+      data: { totalCompletedRides: { increment: 1 } },
+    });
+
+    // For cash payments, update the driver's wallet immediately.
+    if (paymentMethod === PaymentMethod.cash) {
+      await tx.wallet.update({
+        where: { userId: userId },
+        data: { balance: { decrement : commission } },
+      });
+      const driverWallet = await tx.wallet.findUnique({ where: { userId: userId } });
+      if (!driverWallet) throw new Error("Driver wallet not found");
+      await tx.walletTransaction.create({
+        data: {
+          walletId: driverWallet.id,
+          type: 'debit',
+          amount: commission,
+          reference: `commission-${reference}`,
+          status: 'completed',
+        },
+      });
+    }
+    // Return the updated ride and rider details.
+    return { rideUpdate, riderEmail: ride.user.email, riderId: ride.user.id };
   });
 
-  const completedRidesCount = await prisma.ride.count({
-    where: {
-      userId: ride.userId,
-      status: RideStatus.completed,
-    },
-  });
+  // For card payments, enqueue a job to process the card charge with the email already available.
+  if (paymentMethod === PaymentMethod.card) {
+    const jobPayload = {
+      rideId,
+      finalFare,
+      riderEmail,  // Retrieved from transaction.
+      riderId,     // Rider's user id.
+      userId,
+      netAmount,
+      reference,
+    };
+    await publishToQueue(jobPayload,'cardChargeQueue');
+  }
 
-  await prisma.user.update({
-    where: { id: ride.userId },
-    data: {
-      totalCompletedRides: completedRidesCount,
-    },
-  });
-
-  return updatedRide;
+  return rideUpdate;
 };
+
 
 export const rateUser = async (
   userId: string,
@@ -542,23 +601,6 @@ export const rateUser = async (
 };
 
 
-
-export const getDriverWallet = async (driverId: string) => {
-  const wallet = await prisma.driverWallet.findUnique({
-    where: { driverId }
-  })
-
-  if (!wallet) {
-    return await prisma.driverWallet.create({
-      data: {
-        driverId,
-        balance: 0.0
-      }
-    })
-  }
-
-  return wallet;
-}
 export const getDriverRideHistory = async (
   driverId: string,
   page: number = 1,
