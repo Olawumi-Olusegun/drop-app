@@ -2,7 +2,7 @@
 import amqp from 'amqplib';
 import { error } from 'console';
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
+const RABBITMQ_URL = process.env.RABBITMQ_URL! //|| 'amqp://localhost';
 
 
 export const publishToQueue = async (message: object, QUEUE_NAME: string) => {
@@ -16,6 +16,7 @@ export const publishToQueue = async (message: object, QUEUE_NAME: string) => {
   channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(message)), {
     persistent: true,
   });
+  console.log(`Message sent to ${QUEUE_NAME}`);
 }
 catch(error:any){
   console.error(error.message)

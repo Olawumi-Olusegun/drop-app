@@ -39,6 +39,7 @@ model User {
   savedCardAuthCode     String?
   ActivityLog           ActivityLog[]
   bank                  BankDetail?
+  couriers              CourierService[]   @relation("UserRides")
   Driver                Driver?
   otp                   OTP?
   payments              Payment[]          @relation("UserPayments")
@@ -48,8 +49,6 @@ model User {
   userRatings           UserRating[]       @relation("UserRatings")
   wallet                Wallet?
   withdrawal            Withdrawal[]       @relation("UserWithdrawals")
-
-  couriers CourierService[] @relation("UserRides")
 }
 
 model Ride {
@@ -63,11 +62,11 @@ model Ride {
   dropoffLocation  String
   dropoffLatitude  Float
   dropoffLongitude Float
-  paymentMethod    PaymentMethod @default(card)
   finalFare        Float?        @default(0.0)
   userTimezone     String
   expiresAt        DateTime?
   createdAt        DateTime      @default(now())
+  paymentMethod    PaymentMethod @default(card)
   ActivityLog      ActivityLog[]
   payment          Payment?      @relation("PaymentToRide")
   driver           Driver?       @relation("DriverRides", fields: [driverId], references: [id])
@@ -112,9 +111,12 @@ model OTP {
 model Driver {
   id                  String                @id @default(uuid())
   userId              String                @unique
+  driverType          DriverType
+  transportType       TransportType?
   firstName           String
   middleName          String?
   lastName            String
+  profileImage        String?
   nationality         String
   dateOfBirth         DateTime
   fullAddress         String
@@ -244,24 +246,21 @@ model WalletTransaction {
 }
 
 model Payment {
-  id            String        @id @default(uuid())
-  rideId        String        @unique
-  userId        String
-  amount        Float
-  netAmount     Float
-  paymentMethod PaymentMethod
-  status        PaymentStatus @default(pending)
-  reference     String        @unique
-
-  //[serviceId]: A more generic payment field for all drop app services
-  serviceType        ServiceType @default(book_ride)
-  serviceId          String?     @unique
+  id                 String          @id @default(uuid())
+  rideId             String          @unique
+  userId             String
+  amount             Float
+  netAmount          Float
+  paymentMethod      PaymentMethod
+  status             PaymentStatus   @default(pending)
+  reference          String          @unique
+  createdAt          DateTime        @default(now())
   serviceDescription String?
-
-  createdAt DateTime        @default(now())
-  ride      Ride            @relation("PaymentToRide", fields: [rideId], references: [id], onDelete: Cascade)
-  user      User            @relation("UserPayments", fields: [userId], references: [id])
-  courier   CourierService? @relation("PaymentToCourier")
+  serviceId          String?         @unique
+  serviceType        ServiceType     @default(book_ride)
+  courier            CourierService? @relation("PaymentToCourier")
+  ride               Ride            @relation("PaymentToRide", fields: [rideId], references: [id], onDelete: Cascade)
+  user               User            @relation("UserPayments", fields: [userId], references: [id])
 }
 
 model Withdrawal {
@@ -310,13 +309,19 @@ model CourierService {
   packageDescription  String
   otp                 String
   userId              String
+  paymentId           String?       @unique
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  payment             Payment?      @relation("PaymentToCourier", fields: [paymentId], references: [id])
   user                User          @relation("UserRides", fields: [userId], references: [id], onDelete: Cascade)
+}
 
-  paymentId String?  @unique
-  payment   Payment? @relation("PaymentToCourier", fields: [paymentId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum DriverType {
+  instantRide
+  courier
+  freight
+  professionalDriver
 }
 
 enum PackageType {
