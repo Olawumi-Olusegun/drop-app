@@ -2,7 +2,6 @@ import { Server, Socket } from "socket.io";
 import prisma from "../config/db";
 import { findDriver } from "../services/socket.service";
 
-
 const socketIo = (io: Server) => {
 
     // const connectedSocketUsers = new Map();
@@ -41,7 +40,7 @@ const socketIo = (io: Server) => {
     socket.on("trackDriver", async (data) => {
         // const location = await redis.get(`driver:${driverId}`);
         const { driverId } = JSON.parse(data);
-   
+
         // Ensure driverId is a string
         const driverIdToString = String(driverId);
         if(!driverIdToString) return;

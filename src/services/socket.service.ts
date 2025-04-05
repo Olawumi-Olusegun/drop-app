@@ -7,17 +7,15 @@ type FindDriver = {
     driverIdToString: string;
 }
 
-
 export const findDriver = async ({ driverIdToString, longitudeToFloat, latitudeToFloat }: FindDriver) => {
     try {
+
         const driverData = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-         
+
             const driver = await tx.driver.findUnique({
                 where: { id: driverIdToString },
                 select: { userId: true, user: true }
             });
-
-            driver?.user.latitude
 
             // If no driver found, return null
             if (!driver || !driver.userId) {
@@ -28,7 +26,7 @@ export const findDriver = async ({ driverIdToString, longitudeToFloat, latitudeT
             const user = await tx.user.update({
                 where: { id: driver.userId },
                 data: { longitude: longitudeToFloat, latitude: latitudeToFloat },
-                select: { id: true, longitude: true, latitude: true }
+                select: { id: true, longitude: true, latitude: true, updatedAt: true }
             });
 
             return { user, driver };
