@@ -5,6 +5,7 @@ firebase-config/
 .env.development
 drop-ride.json
 withdrawalWorker.json
+cardCharge.json
 seed.ts
 .vscode
 .DS_Store
