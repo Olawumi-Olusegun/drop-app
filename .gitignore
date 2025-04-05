@@ -4,7 +4,7 @@ firebase-config/
 .env
 .env.development
 drop-ride.json
-
+withdrawalWorker.json
 seed.ts
 .vscode
 .DS_Store
